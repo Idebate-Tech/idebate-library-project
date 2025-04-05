@@ -216,6 +216,13 @@ Future<void> addBorrowedRow(String isbn, String subject, String bookTitle, Strin
     final gsheets = GSheets(credentials);
     final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
     final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
+    final booksSheet = spreadsheet.worksheetByTitle('books');
+
+    if (booksSheet == null) {
+      Navigator.of(Get.context!).pop();
+      notOnlineMessage(Get.context!).show();
+      throw Exception('Books sheet not found');
+    }
 
     if (borrowedSheet == null) {
       /// Not online error
@@ -242,6 +249,18 @@ Future<void> addBorrowedRow(String isbn, String subject, String bookTitle, Strin
             Book book = Book(isbn,subject, bookTitle, borrowedBy, email, id, phoneNumber,returnDate);
             realm.add<Book>(book);
           });
+
+          int qty;
+          int newQty;
+          final allRows = await booksSheet.values.allRows();
+          for (int i = 0; i < allRows.length; i++) {
+            final row = allRows[i]; // Get the row
+            if (row.isNotEmpty && row[1] == isbn) { // Check column 5 for match
+              qty = int.parse(row[5]);
+              newQty = qty-1;
+              await booksSheet.values.insertValue(newQty.toString(), column: 6, row: i+1); // Google Sheets uses 1-based index
+            }
+          }
 
           // Add the new row
           List<String> rowData = [isbn,subject, bookTitle, borrowedBy, email, id, phoneNumber,pickDate,returnDate];
@@ -439,7 +458,14 @@ Future<void> addReturnConfirmRow(String isbn, String subject, String bookTitle, 
     final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
     final returnSheet = spreadsheet.worksheetByTitle('confirmed returns');
     final returnPendingSheet = spreadsheet.worksheetByTitle('pending returns');
+    final booksSheet = spreadsheet.worksheetByTitle('books');
 
+
+    if (booksSheet == null) {
+      Navigator.of(Get.context!).pop();
+      notOnlineMessage(Get.context!).show();
+      throw Exception('Books sheet not found');
+    }
 
     if (returnSheet == null) {
       throw Exception('Borrowed sheet not found');
@@ -467,6 +493,19 @@ Future<void> addReturnConfirmRow(String isbn, String subject, String bookTitle, 
         }
       }
     }
+
+    int qty;
+    int newQty;
+    final allRows = await booksSheet.values.allRows();
+    for (int i = 0; i < allRows.length; i++) {
+      final row = allRows[i]; // Get the row
+      if (row.isNotEmpty && row[1] == isbn) { // Check column 5 for match
+        qty = int.parse(row[5]);
+        newQty = qty+1;
+        await booksSheet.values.insertValue(newQty.toString(), column: 6, row: i+1); // Google Sheets uses 1-based index
+      }
+    }
+
 
     /// Close the loader and show success dialog
    Navigator.of(Get.context!).pop();
@@ -529,7 +568,7 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
         if (userRows.isNotEmpty) {
             for (final row in userRows) { // Skip the header row
               if (row.isNotEmpty && row[3] == email) { // Ensure the row has enough columns
-                capPass = row[6];
+                capPass = row[5];
               }
             }
         }
