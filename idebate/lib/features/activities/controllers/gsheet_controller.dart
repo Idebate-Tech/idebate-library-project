@@ -42,12 +42,9 @@ Future<String?> findBookByISBN(String isbn, BuildContext context) async {
   try{
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final booksSheet = spreadsheet.worksheetByTitle('books');
-    String? name;
-    String? email;
-    String? phoneNumber;
     String? title;
     String? subject;
 
@@ -98,8 +95,8 @@ Future<String?> findBookReturnLookUp(String isbn, BuildContext context) async {
   try{
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final booksSheet = spreadsheet.worksheetByTitle('pending returns');
     String? title;
     String? subject;
@@ -156,8 +153,8 @@ Future<void> bookLookUpByISBN(String isbn, BuildContext context) async {
   try{
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final booksSheet = spreadsheet.worksheetByTitle('books');
     String? title;
     String? subject;
@@ -169,7 +166,7 @@ Future<void> bookLookUpByISBN(String isbn, BuildContext context) async {
       notOnlineMessage(Get.context!).show();
       throw Exception('Books sheet not found');
     }
-    print("the isbn === $isbn");
+
     /// Search for ISBN in the first column (column 1)
     final allRows = await booksSheet.values.allRows();
     for (final row in allRows) {
@@ -195,7 +192,7 @@ Future<void> bookLookUpByISBN(String isbn, BuildContext context) async {
     notOnlineMessage(Get.context!).show();
   }
 
-  return null;
+  return;
 }
 
 /// add borrowed to sheet
@@ -213,8 +210,8 @@ Future<void> addBorrowedRow(String isbn, String subject, String bookTitle, Strin
   try{
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
     final booksSheet = spreadsheet.worksheetByTitle('books');
 
@@ -308,8 +305,8 @@ Future<void> addNewBook(String bookSubject,String isbn, String bookTitle,String 
   try{
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final bookSheet = spreadsheet.worksheetByTitle('books');
 
     if (bookSheet == null) {
@@ -379,8 +376,8 @@ Future<void> addReturnPendingRow(String isbn, String subject, String bookTitle, 
   try {
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final returnSheet = spreadsheet.worksheetByTitle('pending returns');
     final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
 
@@ -431,7 +428,6 @@ Future<void> addReturnPendingRow(String isbn, String subject, String bookTitle, 
 
   } catch (e) {
     // Close the loader and show error message
-    print("in the catch statament and the error is $e");
     Navigator.of(Get.context!).pop();
     notOnlineMessage(Get.context!).show();
   }
@@ -454,8 +450,8 @@ Future<void> addReturnConfirmRow(String isbn, String subject, String bookTitle, 
   try {
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final returnSheet = spreadsheet.worksheetByTitle('confirmed returns');
     final returnPendingSheet = spreadsheet.worksheetByTitle('pending returns');
     final booksSheet = spreadsheet.worksheetByTitle('books');
@@ -547,22 +543,21 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
   try{
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final userSheet = spreadsheet.worksheetByTitle('Librarians');
     String capPass ="";
     if(email == person.first.email && password == person.first.password)
     {
       Navigator.of(Get.context!).pop(); // Close the loader
       Navigator.pushAndRemoveUntil(
-        context,
+        Get.context!,
         MaterialPageRoute(builder: (context) => const NavigationMenu()),
             (route) => false, // Removes all previous routes
       );
     }
     else if(email.contains("admin"))
     {
-      print("we are here");
       if (userSheet != null) {
         final userRows = await userSheet.values.allRows();
         if (userRows.isNotEmpty) {
@@ -577,7 +572,7 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
         {
           Navigator.of(Get.context!).pop(); // Close the loader
           Navigator.pushAndRemoveUntil(
-            context,
+            Get.context!,
             MaterialPageRoute(builder: (context) => const ManagerMenu()),
                 (route) => false, // Removes all previous routes
           );
@@ -588,6 +583,11 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
           wrongCredentials(Get.context!).show();
         }
     }
+    else
+      {
+        Navigator.of(Get.context!).pop(); // Close the loader
+        wrongCredentials(Get.context!).show();
+      }
   }
   catch (e)
   {
@@ -612,8 +612,8 @@ Future<void> addNewuser(String fName, String lName, String email, String id, Str
   try {
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final userSheet = spreadsheet.worksheetByTitle('user');
     final bookSheet = spreadsheet.worksheetByTitle('books');
 
@@ -695,8 +695,7 @@ Future<void> addNewuser(String fName, String lName, String email, String id, Str
 
   } catch (e)
   {
-    Navigator.of(Get.context!).pop();
-    print("The error ++ $e");// Close the loader
+    Navigator.of(Get.context!).pop(); // Close the loader
     notOnlineMessage(Get.context!).show();
   }
 }
@@ -717,8 +716,8 @@ Future<void> updateLibrary(BuildContext context) async {
   try {
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final borrowedSheet = spreadsheet.worksheetByTitle('user');
     final bookSheet = spreadsheet.worksheetByTitle('books');
 
@@ -789,8 +788,8 @@ Future<void> recoverAccount(BuildContext context, String id) async {
   try {
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
     final userSheet = spreadsheet.worksheetByTitle('user');
     final bookSheet = spreadsheet.worksheetByTitle('books');
     final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
@@ -871,8 +870,7 @@ Future<void> recoverAccount(BuildContext context, String id) async {
 
   } catch (e)
   {
-    Navigator.of(Get.context!).pop();
-    print("error on recover == $e");// Close the loader
+    Navigator.of(Get.context!).pop(); // Close the loader
     notOnlineMessage(Get.context!).show();
   }
 }
@@ -894,8 +892,8 @@ Future<void> updatePassword(String password, String natId, BuildContext context)
     // Load Google Sheets credentials
     final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
     final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gsheets = GSheets(credentials);
-    final spreadsheet = await gsheets.spreadsheet(_spreadsheetId);
+    final gSheets = GSheets(credentials);
+    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
 
     // Get the 'user' worksheet
     final borrowedSheet = spreadsheet.worksheetByTitle('user');
