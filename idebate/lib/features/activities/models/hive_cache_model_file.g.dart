@@ -22,7 +22,7 @@ class BookAdapter extends TypeAdapter<Book> {
       title: fields[2] as String,
       publisher: fields[3] as String,
       published: fields[4] as String,
-      totalQty: fields[5] as int,
+      totalQty: fields[5] as String,
     );
   }
 
@@ -71,7 +71,7 @@ class UserAdapter extends TypeAdapter<User> {
       email: fields[2] as String,
       id: fields[3] as String,
       phoneNumber: fields[4] as String,
-      password: fields[5] as int,
+      password: fields[5] as String,
     );
   }
 

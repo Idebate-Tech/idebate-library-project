@@ -1,24 +1,40 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
-import 'package:email_otp/email_otp.dart';
+// import 'package:email_otp/email_otp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:idebate/utils/validators/validation.dart';
-import 'package:realm/realm.dart';
+// import 'package:realm/realm.dart';
+import '../../../../../common/widgets/login_signup/form_divider.dart';
 import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import '../../../../activities/controllers/gsheet_controller.dart';
-import '../../../../activities/models/realm_local_storage.dart';
+// import '../../../../activities/models/realm_local_storage.dart';
+import '../../../../activities/models/hive_cache_model_file.dart';
 import '../../../controllers/signup/signup_controller.dart';
 import '../../../encryption/encryption.dart';
 import '../../password_configuration/forget_password.dart';
+import '../../signup/signup.dart';
 
-var config = Configuration.local([Profile.schema, Checker.schema]);
-var realm = Realm(config);
-final person = realm.all<Profile>();
-final checker = realm.all<Checker>();
+// var config = Configuration.local([Profile.schema, Checker.schema]);
+// var realm = Realm(config);
+// final person = realm.all<Profile>();
+// final checker = realm.all<Checker>();
+
+final booksBox = Hive.box<Book>('booksBox');
+final userBox = Hive.box<User>('userBox');
+final borrowedBox = Hive.box<Borrowed>('borrowedBox');
+final pendingReturnBox = Hive.box<PendingReturn>('pendingReturnBox');
+
+final person = userBox.values;
+final books = borrowedBox.values;
+final String fullName = '${person.first.firstName} ${person.first.lastName}';
+final String email = person.first.email ;
+final String phoneNumber = person.first.phoneNumber;
+final String id = person.first.id;
 
 final _formKey = GlobalKey<FormState>();
 
@@ -31,24 +47,24 @@ class TLoginForm extends StatefulWidget {
 
 class TLoginFormState extends State<TLoginForm>
 {
-  bool _isChecked = false;
+  // bool _isChecked = false;
 
-  void _updateCheckerTable(bool isChecked) {
-    if (isChecked) {
-      // Clear the Checker table if it's not empty
-      if (checker.isNotEmpty) {
-        realm.write(() {
-          realm.deleteAll<Checker>();
-        });
-      }
-
-      // Add "checked" to the Checker table
-      realm.write(() {
-        realm.add(Checker('checked'));
-      });
-    }
-    // Do nothing when unchecked
-  }
+  // void _updateCheckerTable(bool isChecked) {
+  //   if (isChecked) {
+  //     // Clear the Checker table if it's not empty
+  //     if (checker.isNotEmpty) {
+  //       realm.write(() {
+  //         realm.deleteAll<Checker>();
+  //       });
+  //     }
+  //
+  //     // Add "checked" to the Checker table
+  //     realm.write(() {
+  //       realm.add(Checker('checked'));
+  //     });
+  //   }
+  //   // Do nothing when unchecked
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -95,25 +111,25 @@ class TLoginFormState extends State<TLoginForm>
               Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    /// Remember Me
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Checkbox(
-                            value: _isChecked,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                _isChecked = value!;
-                                _updateCheckerTable(_isChecked);
-                              });
-                            },
-                          ),
-                        ),
-                        Text(TTexts.rememberMe),
-                      ],
-                    ),
+                    // /// Remember Me
+                    // Row(
+                    //   children: [
+                    //     SizedBox(
+                    //       width: 24,
+                    //       height: 24,
+                    //       child: Checkbox(
+                    //         value: _isChecked,
+                    //         onChanged: (bool? value) {
+                    //           setState(() {
+                    //             _isChecked = value!;
+                    //             // _updateCheckerTable(_isChecked);
+                    //           });
+                    //         },
+                    //       ),
+                    //     ),
+                    //     Text(TTexts.rememberMe),
+                    //   ],
+                    // ),
                     /// Forget Password
                     TextButton(onPressed: () => Get.to(() => const ForgetPassword()), child: Text(TTexts.forgetPassword, style: const TextStyle(color: TColors.primary))),
                   ]
@@ -126,11 +142,11 @@ class TLoginFormState extends State<TLoginForm>
               const SizedBox(height: TSizes.spaceBtwSections),
 
               const SizedBox(height: TSizes.spaceBtwItems/ 2),
-              const Divider(),
+              TFormDivider(dividerText: "don't have an account?"),
 
               const SizedBox(height: TSizes.spaceBtwSections),
                /// Update Library
-              SizedBox(width: double.infinity, child: OutlinedButton(onPressed: () {updateLibrary(context);}, child: const Text("Update Library"))),
+              SizedBox(width: double.infinity, child: OutlinedButton(onPressed: () {Get.offAll(const SignupScreen());}, child: const Text("create account"))),
               const SizedBox(height: TSizes.spaceBtwSections),
             ],
           ),
@@ -160,23 +176,11 @@ class TLoginFormState extends State<TLoginForm>
     }
 
     try {
-      String encrypted= encryption(password!,person.first.nationalId);
-
-      /// Add user
+      String encrypted= encryption(password!,TTexts.encryptKey);
+      /// login
       login(email!, encrypted,password,context);
     } on PlatformException catch (e) {
       throw Exception('Problem with encryption $e');
     }
-
-  }
-
-  void main() {
-    EmailOTP.config(
-      appName: 'MyApp',
-      otpType: OTPType.numeric,
-      expiry: 3000,
-      appEmail: 'me@rohitchouhan.com',
-      emailTheme: EmailTheme.v5,
-    );
   }
 }

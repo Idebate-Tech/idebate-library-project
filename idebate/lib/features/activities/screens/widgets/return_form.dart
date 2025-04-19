@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
-import 'package:realm/realm.dart';
+// import 'package:realm/realm.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
-import '../../models/realm_local_storage.dart';
+import '../../models/hive_cache_model_file.dart';
+// import '../../models/realm_local_storage.dart';
 
 
-var config = Configuration.local([Book.schema, Profile.schema]);
-var realm = Realm(config);
-RealmResults<Book> book = realm.all<Book>();
+// var config = Configuration.local([Book.schema, Profile.schema]);
+// var realm = Realm(config);
+// RealmResults<Book> book = realm.all<Book>();
+
+final booksBox = Hive.box<Book>('booksBox');
+final userBox = Hive.box<User>('userBox');
+final borrowedBox = Hive.box<Borrowed>('borrowedBox');
+final pendingReturnBox = Hive.box<PendingReturn>('pendingReturnBox');
+
+final person = userBox.values;
+final books = borrowedBox.values;
+// final String fullName = '${person.first.firstName} ${person.first.lastName}';
+// final String email = person.first.email ;
+// final String phoneNumber = person.first.phoneNumber;
+// final String id = person.first.id;
+
 String title = "Tittle";
 String subject = "Subject";
 String isbn = "ISBN";
@@ -27,11 +42,11 @@ class _ReturnFormState extends State<ReturnForm>
 {
   @override
   Widget build(BuildContext context) {
-    if(book.isNotEmpty)
+    if(books.isNotEmpty)
       {
-        title = book.first.title;
-        subject = book.first.subject;
-        isbn = book.first.isbn;
+        title = books.first.title;
+        subject = books.first.subject;
+        isbn = books.first.isbn;
       }
     String date = DateFormat('dd-MM-yyyy').format(DateTime.now());
     return Form(

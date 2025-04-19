@@ -1,21 +1,32 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
-import 'package:realm/realm.dart';
-import 'features/activities/models/realm_local_storage.dart';
+// import 'package:realm/realm.dart';
+// import 'features/activities/models/realm_local_storage.dart';
 import 'package:timezone/timezone.dart' as tz;
+
+import 'features/activities/models/hive_cache_model_file.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 
-final config = Configuration.local([Book.schema, Profile.schema]);
-final realm = Realm(config);
+final booksBox = Hive.box<Book>('booksBox');
+final userBox = Hive.box<User>('userBox');
+final borrowedBox = Hive.box<Borrowed>('borrowedBox');
+final pendingReturnBox = Hive.box<PendingReturn>('pendingReturnBox');
+
+// final config = Configuration.local([Book.schema, Profile.schema]);
+// final realm = Realm(config);
 
 Future<void> checkAndScheduleNotifications() async {
   print('checkAndScheduleNotifications started');
 
   final now = DateTime.now();
-  final books = realm.all<Book>();
-  final person = realm.all<Profile>();
+  // final books = realm.all<Book>();
+  // final person = realm.all<Profile>();
+
+  final person = userBox.values;
+  final books = borrowedBox.values;
 
   // If person is empty, show a one-time immediate notification
   if (person.isEmpty) {
@@ -41,7 +52,7 @@ Future<void> checkAndScheduleNotifications() async {
   if (books.isEmpty) {
     await flutterLocalNotificationsPlugin.show(
       1, // Notification ID
-      'Hello ${person.isNotEmpty ? person.first.lastName : "User"}!',
+      'Hi there! 🤗',
       'Today is a nice day to read a book!',
       const NotificationDetails(
         android: AndroidNotificationDetails(

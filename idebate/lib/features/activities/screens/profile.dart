@@ -2,6 +2,7 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/get_navigation.dart';
+import 'package:hive/hive.dart';
 import 'package:idebate/common/widgets/appBar/appbar.dart';
 import 'package:idebate/common/widgets/custom_shapes/containers/circular_image_container.dart';
 import 'package:idebate/features/activities/screens/widgets/profile_menu.dart';
@@ -10,18 +11,32 @@ import 'package:idebate/features/authentication/screens/login/login.dart';
 import 'package:idebate/utils/constants/colors.dart';
 import 'package:idebate/utils/constants/images_strings.dart';
 import 'package:idebate/utils/constants/text_strings.dart';
-import 'package:realm/realm.dart';
+// import 'package:realm/realm.dart';
 
 import '../../../utils/constants/sizes.dart';
-import '../models/realm_local_storage.dart';
+import '../models/hive_cache_model_file.dart';
+// import '../models/realm_local_storage.dart';
 
-var config = Configuration.local([Profile.schema,Checker.schema]);
-var realm = Realm(config);
-RealmResults<Profile> person = realm.all<Profile>();
+// var config = Configuration.local([Profile.schema,Checker.schema]);
+// var realm = Realm(config);
+// RealmResults<Profile> person = realm.all<Profile>();
+// final String fullName = '${person.first.firstName} ${person.first.lastName}';
+// final String email = person.first.email ;
+// final String phoneNumber = person.first.phoneNumber;
+// final String id = person.first.nationalId;
+
+final booksBox = Hive.box<Book>('booksBox');
+final userBox = Hive.box<User>('userBox');
+final borrowedBox = Hive.box<Borrowed>('borrowedBox');
+final pendingReturnBox = Hive.box<PendingReturn>('pendingReturnBox');
+
+final person = userBox.values;
+final books = borrowedBox.values;
+
 final String fullName = '${person.first.firstName} ${person.first.lastName}';
 final String email = person.first.email ;
 final String phoneNumber = person.first.phoneNumber;
-final String id = person.first.nationalId;
+final String id = person.first.id;
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -106,11 +121,17 @@ class ProfileScreen extends StatelessWidget {
       desc: "Are you sure you want to logout? 😕",
       btnOkColor: TColors.primary,
       btnOkText: 'Logout',
-      btnOkOnPress: () => {
+      btnOkOnPress: () async => {
       // delete checker value
-      realm.write(() {
-      realm.deleteAll<Checker>();
-      }),
+      // realm.write(() {
+      // realm.deleteAll<Checker>();
+      // })
+        await userBox.clear(),
+        await borrowedBox.clear(),
+        await booksBox.clear(),
+
+        print('is person empty == ${person.isEmpty}'),
+
         Get.offAll(() => const LoginScreen())
     },
       btnCancelColor: TColors.dark,

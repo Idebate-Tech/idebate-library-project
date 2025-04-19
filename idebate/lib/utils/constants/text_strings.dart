@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 class TTexts {
-  static String languageCode = ui.window.locale.languageCode;
 
   // English texts
   static const Map<String, String> enTexts = {
@@ -103,115 +102,11 @@ class TTexts {
     'wrongIdSub':'The ID you supplied does not correspond to the one provided on account creation. Verify and try again',
     'recoverAccount' : "An account with the same ID has been found",
     'recoverAccountSub': "Would you like to recover your account ?",
-    'recover': "recover"
-  };
-
-  // French texts
-  static const Map<String, String> frTexts = {
-
-    // -- Onboarding Texts
-    'onBoardingTitle1':"Here We Go!",
-    'onBoardingTitle2':"Skill Up!",
-    'onBoardingTitle3':"Take a break",
-    'onBoardingSubTitle1':"Welcome to the iDebate Library App!",
-    'onBoardingSubTitle2':"learn something new and moved ahead!",
-    'onBoardingSubTitle3':"Relax with a passionate story!",
-    'spreadsheetId':'1OawtYBvbfIcNu45kU21nk-rE_Z5nLWCzf53DVQKpyJ0',
-
-    'submit':"Submit",
-    'appName':"Idebate",
-    'tContinue':"Continue",
-    'Skip':"Skip",
-    'done':"Done",
-    'borrow':"Borrow",
-    'return': "Return",
-    'scanCode':"Scan ISBN code",
-    'complete':"Complete! 🥳",
-    'completeMessage':"Enjoy your read!",
-    'bookNotFound':"Book not found 😔",
-    'bookNotFoundMessage':"We couldn't find the book you are looking for.",
-    'close':"Close",
-    'Filled':"Filed! 📁",
-    'FilledMessage1':"Thank you for returning ",
-    'FilledMessage2': "We hope you enjoyed it! Please add it to the return box to complete the process 🙂",
-    'profile': "Profile",
-    'accountCreated':'Account created successfully !🥳',
-    'accountCreatedSub': 'Your account has been created successfully! Lets login!',
-
-
-    //--- Authentication Form Text
-    'firstName':"First Name",
-    'lastName':"Last Name",
-    'email':"E-mail",
-    'password':"Password",
-    'newPassword':"New Password",
-    'ID':"National ID",
-    'phoneNo':"Phone Number",
-    'rememberMe':"Remember Me",
-    'forgetPassword':"Forgot Password?",
-    'signIn':"Sign In",
-    'createAccount':"Create Account",
-    'orSignInWith':"or sign in with",
-    'orSignUpWith':"or Sign Up with",
-    'iAgreeTo':"I agree to",
-    'privacyPolicy':"Privacy Policy",
-    'termsOfUse':"Term of use",
-    'verificationCode':"verification Code",
-    'resendEmail':"Resend Email",
-    'resendEmailIn':"Resend email in",
-    'and':"and",
-    'or' : "Or",
-    'bookName':"Book Name",
-    'ISBN':"ISBN Code",
-    'returnDate':"Return Date",
-    'pickDate':"designated return Date",
-    'homeAppbarTitle':"Welcome!",
-    'homeAppbarSubTitle':"Your Next read awaits!",
-    'returnAppbarTitle':"Thank you!",
-    'returnAppbarSubTitle':"We hope you enjoyed your read!",
-
-    //--- Authentication headings Text
-    'loginTitle': 'Thinking and Speaking a better world',
-    'loginSubTitle': "Login",
-    'signupTitle':"let's create your account",
-    'forgetPasswordTitle':"Forgot password",
-    'forgetPasswordSubtitle':"Don't worry sometimes people can forget too, enter your National ID for verification and reset your password",
-    'changeYourPasswordTitle':"Reset Password",
-    'changeYourPasswordSubtitle':"Your Account security is our priority! We've sent you a secure link to safely change your password and keep your Account protected",
-    'confirmEmail':"Verify your Email address!",
-    'confirmEmailSubtitle': "Congratulations! Your Account awaits: Verify your Email to start.",
-    'emailNotReceivedMessage': "Didn't get the email check your junk/spam or resend it.",
-    'yourAccountCreatedTitle':"Your account successfully created!",
-    'yourAccountCreatedSubtitle': "Welcome to the Idebate Library app! Your next read awaits.",
-    'wrongCredentials':'Wrong credentials 😱',
-    'wrongCredentialsSub':"The email or password you provided was not correct.",
-    'googleSheetNotUpdated':'Not updated 😓',
-    'googleSheetNotUpdatedSub':'Failed to update Google Sheet row',
-    'idNoMatch':"No matching ID 😦",
-    'idNoMatchSub': "No matching row found for natId: ",
-    'loadLibraryError':'Error 😬',
-    'loadLibraryErrorSub': 'An error occurred while loading the library',
-    'notOnline': 'Could not reach the server 😒',
-    'notOnlineSub': 'Please ensure you connection is sturdy and try again',
-    'ruleOfOne':'Rule of one 🥱',
-    'ruleOfOneSub':"Sorry, you can only borrow one book at a time!",
-    'libraryUpdate':'Library updated 🙂',
-    'libraryUpdateSub':"Your library is currently up to date.",
-    'validationIssue':'Validation issues 😶',
-    'validationIssueSub':'Please Verify that all the fields are properly validated',
-    'passwordResetSuccess':'Password Reset successfully!',
-    'passwordResetSuccessSub' : 'Your password has been updated successfully. Please proceed to Login',
-    'wrongId':'Wrong ID 🧐',
-    'wrongIdSub':'The ID you supplied does not correspond to the one provided on account creation. Verify and try again',
-    'recoverAccount' : "An account with the same ID has been found",
-    'recoverAccountSub': "Would you like to recover your account ?",
-    'recover': "recover"
+    'recover': "recover",
+    'encryptKey' :"NJVDSNDkncknsdvdknDNLSDSD"
   };
 
   static String _getText(String key) {
-    if (languageCode == 'fr') {
-      return frTexts[key] ?? 'Text not found';
-    }
     return enTexts[key] ?? 'Text not found';
   }
 
@@ -312,4 +207,5 @@ class TTexts {
   static String get returnDate => _getText('returnDate');
   static String get pickDate => _getText('pickDate');
   static String get profile => _getText('profile');
+  static String get encryptKey => _getText('encryptKey');
 }

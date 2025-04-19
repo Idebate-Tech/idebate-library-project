@@ -1,29 +1,44 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive/hive.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
-import 'package:realm/realm.dart';
+// import 'package:realm/realm.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import '../../../../common/widgets/login_signup/form_divider.dart';
 import '../../../../utils/validators/validation.dart';
 import '../../../authentication/controllers/signup/signup_controller.dart';
 import '../../controllers/gsheet_controller.dart';
-import '../../models/realm_local_storage.dart';
+import '../../models/hive_cache_model_file.dart';
+// import '../../models/realm_local_storage.dart';
 
 final _formKey = GlobalKey<FormState>();
-var config = Configuration.local([Profile.schema, Book.schema]);
-var realm = Realm(config);
-RealmResults<Profile> person = realm.all<Profile>();
-RealmResults<Book> book = realm.all<Book>();
+
+// var config = Configuration.local([Profile.schema, Book.schema]);
+// var realm = Realm(config);
+// RealmResults<Profile> person = realm.all<Profile>();
+// RealmResults<Book> book = realm.all<Book>();
+// final String fullName = '${person.first.firstName} ${person.first.lastName}';
+// final String email = person.first.email ;
+// final String phoneNumber = person.first.phoneNumber;
+// final String id = person.first.nationalId;
+
+final booksBox = Hive.box<Book>('booksBox');
+final userBox = Hive.box<User>('userBox');
+final borrowedBox = Hive.box<Borrowed>('borrowedBox');
+final pendingReturnBox = Hive.box<PendingReturn>('pendingReturnBox');
+
+final person = userBox.values;
+final books = borrowedBox.values;
 final String fullName = '${person.first.firstName} ${person.first.lastName}';
 final String email = person.first.email ;
 final String phoneNumber = person.first.phoneNumber;
-final String id = person.first.nationalId;
+final String id = person.first.id;
 
 class BorrowForm extends StatefulWidget {
   const BorrowForm({super.key, this.scannedCode, this.title, this.subject,});

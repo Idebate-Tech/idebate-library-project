@@ -2,19 +2,33 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:idebate/features/activities/controllers/gsheet_controller.dart';
 import 'package:idebate/utils/constants/sizes.dart';
-import 'package:realm/realm.dart';
+// import 'package:realm/realm.dart';
 import '../../../../utils/constants/text_strings.dart';
 import '../../../../utils/validators/validation.dart';
-import '../../../activities/models/realm_local_storage.dart';
+// import '../../../activities/models/realm_local_storage.dart';
+import '../../../activities/models/hive_cache_model_file.dart';
 import '../../controllers/signup/signup_controller.dart';
 import '../../encryption/encryption.dart';
 
-var config = Configuration.local([Profile.schema]);
-var realm = Realm(config);
-final person = realm.all<Profile>();
+// var config = Configuration.local([Profile.schema]);
+// var realm = Realm(config);
+// final person = realm.all<Profile>();
+
+final booksBox = Hive.box<Book>('booksBox');
+final userBox = Hive.box<User>('userBox');
+final borrowedBox = Hive.box<Borrowed>('borrowedBox');
+final pendingReturnBox = Hive.box<PendingReturn>('pendingReturnBox');
+
+final person = userBox.values;
+final books = borrowedBox.values;
+// final String fullName = '${person.first.firstName} ${person.first.lastName}';
+// final String email = person.first.email ;
+// final String phoneNumber = person.first.phoneNumber;
+// final String id = person.first.id;
 
 final _formKey = GlobalKey<FormState>();
 class ForgetPassword extends StatelessWidget {
@@ -124,24 +138,24 @@ class ForgetPassword extends StatelessWidget {
   Future<void> _encryptString(String natId, String password, BuildContext context) async
   {
 
-    if(natId != person.first.nationalId)
-      {
-        wrongIdScreen(context).show();
-      }
-    else
-      {
+    // if(natId != person.first.id)
+    //   {
+    //     wrongIdScreen(context).show();
+    //   }
+    // else
+    //   {
         if (!_formKey.currentState!.validate()) {
           validationIssuesScreen(context).show();
           return;
         }
         try {
           // Native call to encrypt the password
-          String encrypted= encryption(password,natId);
+          String encrypted= encryption(password,TTexts.encryptKey);
           /// update new password
           updatePassword(encrypted, natId, context);
         } on PlatformException catch (e) {
           throw Exception('Problem with encryption $e');
         }
-      }
+      // }
   }
 }

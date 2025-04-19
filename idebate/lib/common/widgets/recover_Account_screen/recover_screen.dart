@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:idebate/features/authentication/screens/login/login.dart';
@@ -19,7 +18,6 @@ class RecoverScreen extends StatelessWidget {
       // appBar: AppBar(
       //   automaticallyImplyLeading: false,
       //   actions: [
-      //     IconButton(onPressed: () => Get.offAll(() => const LoginScreen()), icon: const Icon(CupertinoIcons.clear))
       //   ],
       // ),
       body: SingleChildScrollView(

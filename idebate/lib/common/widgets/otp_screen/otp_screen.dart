@@ -13,6 +13,7 @@ import '../../../features/authentication/controllers/signup/signup_controller.da
 
 
 final _formKey = GlobalKey<FormState>();
+EmailOTP myAuth = EmailOTP();
 class OtpScreen extends StatefulWidget {
   final String fName;
   final String lName;
@@ -65,12 +66,33 @@ class OtpScreenState extends State<OtpScreen>
                   const SizedBox(height: TSizes.spaceBtwItems),
                   /// verify Button
                   SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async {
-                    if (EmailOTP.verifyOTP(otp: otp)) {
+
+                    // myAuth.setConfig(
+                    //     appEmail: "me@rohitchouhan.com",
+                    //     appName: "Email OTP",
+                    //     userEmail: widget.email,
+                    //     otpLength: 6,
+                    //     otpType: OTPType.digitsOnly
+                    // );
+                    //
+                    // myAuth.setSMTP(
+                    //     host: "smtp.gmail.com",
+                    //     auth: true,
+                    //     username: "rwigemapeterchristian@gmail.com",
+                    //     password: "hwjt bcuz tzsz eppk",
+                    //     secure: "SSL",
+                    //     port: 465
+                    // );
+                    // myAuth.setTheme(
+                    //     theme:"v3"
+                    // );
+
+                    // if (await myAuth.verifyOTP(otp: otp)) {
                           addNewuser(widget.fName, widget.lName, widget.email, widget.natId, widget.phoneNumber, widget.password, context);
-                    } else {
-                      ScaffoldMessenger.of(Get.context!).showSnackBar(
-                          const SnackBar(content: Text("OTP is invalid")));
-                    }
+                    // } else {
+                    //   ScaffoldMessenger.of(Get.context!).showSnackBar(
+                    //       const SnackBar(content: Text("OTP is invalid")));
+                    // }
                   }, child:Text("verify"))),
                   const SizedBox(height: TSizes.spaceBtwItems),
                   const SizedBox(height: TSizes.spaceBtwItems),
@@ -79,7 +101,7 @@ class OtpScreenState extends State<OtpScreen>
                   const SizedBox(height: TSizes.spaceBtwItems),
                   /// verify Button
                   SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async {
-                    if (await EmailOTP.sendOTP(email: widget.email)) {
+                    if (await myAuth.sendOTP()) {
                       ScaffoldMessenger.of(Get.context!).showSnackBar(
                           const SnackBar(content: Text("OTP has been re-sent")));
                     } else {
@@ -99,15 +121,15 @@ class OtpScreenState extends State<OtpScreen>
     );
   }
 
-  void main() {
-    EmailOTP.config(
-      appName: 'MyApp',
-      otpType: OTPType.numeric,
-      expiry: 3000,
-      appEmail: 'me@rohitchouhan.com',
-      emailTheme: EmailTheme.v5,
-    );
-  }
+  // void main() {
+  //   EmailOTP.config(
+  //     appName: 'MyApp',
+  //     otpType: OTPType.numeric,
+  //     expiry: 3000,
+  //     appEmail: 'me@rohitchouhan.com',
+  //     emailTheme: EmailTheme.v5,
+  //   );
+  // }
 
   AwesomeDialog validationIssuesScreen(BuildContext context) {
     return AwesomeDialog(

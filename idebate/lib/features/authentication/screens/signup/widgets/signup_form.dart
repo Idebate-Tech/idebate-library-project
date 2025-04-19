@@ -8,13 +8,14 @@ import 'package:idebate/features/activities/controllers/gsheet_controller.dart';
 import 'package:idebate/features/authentication/controllers/signup/signup_controller.dart';
 import 'package:idebate/features/authentication/encryption/encryption.dart';
 import 'package:idebate/utils/validators/validation.dart';
-import '../../../../../common/widgets/otp_screen/otp_screen.dart';
+// import '../../../../../common/widgets/otp_screen/otp_screen.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 
 
 
 final _formKey = GlobalKey<FormState>();
+EmailOTP myAuth = EmailOTP();
 class TSignupForm extends StatelessWidget {
   const TSignupForm({
     super.key,
@@ -139,26 +140,7 @@ class TSignupForm extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
                 onPressed: () async {
-                  // Show the circular loader
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    },
-                  );
-                  if (await EmailOTP.sendOTP(email: userEmail!)) {
-                    Navigator.of(Get.context!).pop();
-                    ScaffoldMessenger.of(Get.context!).showSnackBar(
-                        const SnackBar(content: Text("OTP has been sent")));
                     _encryptString(userFirstname, userLastName, userEmail, userNatId,userPhoneNumber, userPassword,Get.context!);
-                  } else {
-                    Navigator.of(Get.context!).pop();
-                    ScaffoldMessenger.of(Get.context!).showSnackBar(
-                        const SnackBar(content: Text("OTP failed sent")));
-                  }
                 },
                 child: Text(TTexts.createAccount)))
       ],
@@ -193,26 +175,11 @@ class TSignupForm extends StatelessWidget {
 
     try {
       // Native call to encrypt the password
-     String encrypted= encryption(password!,natId!);
-
-      /// navigate to OTPScreen
-     Navigator.pushReplacement(
-       context,
-       MaterialPageRoute(builder: (context) =>  OtpScreen(email: email!, fName: fName!, natId: natId, phoneNumber: phoneNumber!, password: encrypted, lName: lName!)),
-     );
+     String encrypted= encryption(password!,TTexts.encryptKey);
+     addNewuser(fName!,lName!,email!,natId!,phoneNumber!,encrypted, context);
     } on PlatformException catch (e) {
       throw Exception('Problem with encryption $e');
   }
 
 }
-
-  void main() {
-    EmailOTP.config(
-      appName: 'iDebate',
-      otpType: OTPType.numeric,
-      expiry: 3000,
-      appEmail: 'rwigemapierrechristian@gmail.com',
-      emailTheme: EmailTheme.v5,
-    );
-  }
 }

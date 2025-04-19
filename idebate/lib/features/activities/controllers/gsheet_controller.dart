@@ -11,18 +11,23 @@ import 'package:idebate/features/authentication/screens/login/login.dart';
 import 'package:idebate/manager_menu.dart';
 import 'package:idebate/navigation_menu.dart';
 import 'package:idebate/utils/constants/credentials_string.dart';
-import 'package:realm/realm.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/text_strings.dart';
 import '../../authentication/screens/password_configuration/reset_password.dart';
-import '../models/realm_local_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-var config = Configuration.local([Book.schema,Profile.schema,Library.schema,]);
-var realm = Realm(config);
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../models/hive_cache_model_file.dart';
+
+final booksBox = Hive.box<Book>('booksBox');
+final userBox = Hive.box<User>('userBox');
+final borrowedBox = Hive.box<Borrowed>('borrowedBox');
+final pendingReturnBox = Hive.box<PendingReturn>('pendingReturnBox');
+
 final _spreadsheetId = TTexts.spreadsheetId ;
-final person = realm.all<Profile>();
-final book = realm.all<Book>();
+final person = userBox.values;
+final book = booksBox.values;
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
@@ -47,7 +52,6 @@ Future<String?> findBookByISBN(String isbn, BuildContext context) async {
     final booksSheet = spreadsheet.worksheetByTitle('books');
     String? title;
     String? subject;
-
 
     if (booksSheet == null) {
       Navigator.of(Get.context!).pop();
@@ -241,11 +245,9 @@ Future<void> addBorrowedRow(String isbn, String subject, String bookTitle, Strin
           popUpBookNotFoundScreen(Get.context!).show();
         }
         else{
-          // Add to cache
-          realm.write(() {
-            Book book = Book(isbn,subject, bookTitle, borrowedBy, email, id, phoneNumber,returnDate);
-            realm.add<Book>(book);
-          });
+          ///Add to cache
+          Borrowed borrowed = Borrowed(isbn: isbn, subject: subject, title: bookTitle, borrowedBy: borrowedBy, email: email, id: id, phoneNumber: phoneNumber, pickDate: pickDate, returnDate: returnDate);
+          borrowedBox.put(id, borrowed);
 
           int qty;
           int newQty;
@@ -268,7 +270,7 @@ Future<void> addBorrowedRow(String isbn, String subject, String bookTitle, Strin
           await flutterLocalNotificationsPlugin.show(
             6, // Notification ID
             "Your all set 😃",
-            'Enjoy reading ${book.first.title}!',
+            'Enjoy reading ${borrowed.title}!',
             const NotificationDetails(
               android: AndroidNotificationDetails(
                 'library_channel',
@@ -384,11 +386,7 @@ Future<void> addReturnPendingRow(String isbn, String subject, String bookTitle, 
     if (returnSheet == null) {
       throw Exception('Borrowed sheet not found');
     }
-
-    // Remove book from cache
-    realm.write(() {
-      realm.deleteAll<Book>();
-    });
+    borrowedBox.delete(id);
 
     // Add the new row
     List<String> rowData = [isbn, subject, bookTitle, returnedBy, email, id, phoneNumber, pickDate];
@@ -467,11 +465,6 @@ Future<void> addReturnConfirmRow(String isbn, String subject, String bookTitle, 
       throw Exception('Borrowed sheet not found');
     }
 
-    // Remove book from cache
-    // realm.write(() {
-    //   realm.deleteAll<Book>();
-    // });
-
     String receiverName = "${person.first.firstName} ${person.first.lastName}";
     String receiverEmail = person.first.email;
     // Add the new row
@@ -545,10 +538,80 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
     final credentials = json.decode(jsonString) as Map<String, dynamic>;
     final gSheets = GSheets(credentials);
     final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final userSheet = spreadsheet.worksheetByTitle('Librarians');
+    final librarianSheet = spreadsheet.worksheetByTitle('Librarians');
+    final userSheet = spreadsheet.worksheetByTitle('user');
+    final bookSheet = spreadsheet.worksheetByTitle('books');
+    final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
+
+    String pass ="";
+    String fullName = "";
+    String fname= "";
+    String lname = "";
+    String natid ="";
+    String phNum ="";
+    String passord ="";
+    String emailAddress = "";
+
+    if (userSheet != null) {
+      final userRows = await userSheet.values.allRows();
+      if (userRows.isNotEmpty) {
+        for (final row in userRows) { // Skip the header row
+          if (row.isNotEmpty && row[2] == email) {// Ensure the row has enough columns
+            fname = row[0];
+            lname = row[1];
+            natid = row[3];
+            phNum = row[4];
+            pass = row[5];
+
+          }
+        }
+      }
+    }
+    print('password == $password and pass == $pass');
     String capPass ="";
-    if(email == person.first.email && password == person.first.password)
+    if(password == pass)
     {
+      // bool userFound = false;
+      if (userSheet == null) {
+        /// Not online error
+        Navigator.of(Get.context!).pop(); // Close the loader
+        errorWhileLoadingLibrary(Get.context!).show();
+        throw Exception('Borrowed sheet not found');
+      }
+
+      User user = User(firstName: fname, lastName: lname, email: email, id: natid, phoneNumber: phNum, password: password);
+      userBox.put(natid, user);
+
+      print("fname = ${person.first.firstName} lname = ${person.first.lastName} email = ${person.first.email} id = ${person.first.id} phoneNumber = ${person.first.phoneNumber} password = ${person.first.password}");
+
+      /// Add borrowed to realm db
+      if (borrowedSheet != null) {
+        final borrowedRows = await borrowedSheet.values.allRows();
+        if (borrowedRows.isNotEmpty) {
+          for (final row in borrowedRows) { // Skip the header row
+            if (row.isNotEmpty && row[5] == natid) { // Ensure the row has enough columns
+              print('we are here');
+              Borrowed borrowed = Borrowed(isbn: row[0], subject: row[1], title: row[2], borrowedBy: row[3], email: row[4], id: row[5], phoneNumber: row[6], pickDate: row[7], returnDate: row[8]);
+              borrowedBox.put(natid, borrowed);
+            }
+          }
+        }
+      }
+
+      /// For loop that adds all the books from the books sheet to realm table called Library
+      if (bookSheet != null) {
+        final bookRows = await bookSheet.values.allRows();
+        if (bookRows.isNotEmpty) {
+          for (var row in bookRows.skip(1)) { // Skip the header row
+            if (row.length >= 5) {
+              Book book = Book(subject: row[0], isbn: row[1], title: row[2], publisher: row[3], published: row[4], totalQty: row[5]);
+              booksBox.put(book.isbn, book); // Use ISBN or a unique field as the key
+            }
+          }
+        }
+      }
+
+
       Navigator.of(Get.context!).pop(); // Close the loader
       Navigator.pushAndRemoveUntil(
         Get.context!,
@@ -558,11 +621,15 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
     }
     else if(email.contains("admin"))
     {
-      if (userSheet != null) {
-        final userRows = await userSheet.values.allRows();
+      if (librarianSheet != null) {
+        final userRows = await librarianSheet.values.allRows();
         if (userRows.isNotEmpty) {
             for (final row in userRows) { // Skip the header row
-              if (row.isNotEmpty && row[3] == email) { // Ensure the row has enough columns
+              if (row.isNotEmpty && row[3] == email) {// Ensure the row has enough columns
+                fname = row[1];
+                lname = row[2];
+                natid = row[3];
+                phNum = row[4];
                 capPass = row[5];
               }
             }
@@ -570,6 +637,9 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
       }
       if(capPass == unEncrypted)
         {
+          User user = User(firstName: fname, lastName: lname, email: email, id: natid, phoneNumber: phNum, password: password);
+          userBox.put(natid, user);
+          print("fname = ${person.first.firstName} lname = ${person.first.lastName} email = ${person.first.email} id = ${person.first.id} phoneNumber = ${person.first.phoneNumber} password = ${person.first.password}");
           Navigator.of(Get.context!).pop(); // Close the loader
           Navigator.pushAndRemoveUntil(
             Get.context!,
@@ -579,6 +649,7 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
         }
       else
         {
+          print('password == $password pass == $pass');
           Navigator.of(Get.context!).pop(); // Close the loader
           wrongCredentials(Get.context!).show();
         }
@@ -592,6 +663,9 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
   catch (e)
   {
     Navigator.of(Get.context!).pop();
+    print("the e == $e");
+    ScaffoldMessenger.of(Get.context!).showSnackBar(
+         SnackBar(content: Text("the error $e")));
     notOnlineMessage(Get.context!).show();
   }
 }
@@ -649,23 +723,20 @@ Future<void> addNewuser(String fName, String lName, String email, String id, Str
         await userSheet.values.appendRow(rowData);
 
         /// Add to cache
-        realm.write(() {
-          Profile newUser = Profile(fName, lName, password, id, email, phoneNumber);
-          realm.add<Profile>(newUser);
-        });
+    User user = User(firstName: fName, lastName: lName, email: email, id: id, phoneNumber: phoneNumber, password: password);
+    userBox.put(id, user);
 
         /// For loop that adds all the books from the books sheet to realm table called Library
         if (bookSheet != null) {
           final bookRows = await bookSheet.values.allRows();
           if (bookRows.isNotEmpty) {
-            realm.write(() {
-              for (var row in bookRows.skip(1)) { // Skip the header row
-                if (row.length >= 5) { // Ensure the row has enough columns
-                  Library book = Library(row[0],row[1],row[2],row[3],row[4]);
-                  realm.add<Library>(book);
-                }
+
+            for (var row in bookRows.skip(1)) { // Skip the header row
+              if (row.length >= 5) {
+                Book book = Book(subject: row[0], isbn: row[1], title: row[2], publisher: row[3], published: row[4], totalQty: row[5]);
+                booksBox.put(book.isbn, book); // Use ISBN or a unique field as the key
               }
-            });
+            }
           }
         }
         Navigator.of(Get.context!).pop(); // Close the loader
@@ -728,28 +799,22 @@ Future<void> updateLibrary(BuildContext context) async {
       throw Exception('Borrowed sheet not found');
     }
 
-    // delete old books first
-    realm.write(() {
-      realm.deleteAll<Library>();
-    });
-
+    /// delete old books first
+    booksBox.clear();
     /// For loop that adds all the books from the books sheet to realm table called Library
     if (bookSheet != null) {
       final bookRows = await bookSheet.values.allRows();
       if (bookRows.isNotEmpty) {
-        realm.write(() {
-          for (var row in bookRows.skip(1)) { // Skip the header row
-            if (row.length >= 5) { // Ensure the row has enough columns
-              Library book = Library(row[0],row[1],row[2],row[3],row[4]);
-              realm.add<Library>(book);
-            }
+        for (var row in bookRows.skip(1)) { // Skip the header row
+          if (row.length >= 5) {
+            Book book = Book(subject: row[0], isbn: row[1], title: row[2], publisher: row[3], published: row[4], totalQty: row[5]);
+            booksBox.put(book.isbn, book); // Use ISBN or a unique field as the key
           }
-        });
+        }
       }
     }
     Navigator.of(Get.context!).pop(); // Close the loader
     libraryUpdated(Get.context!).show();
-
     await flutterLocalNotificationsPlugin.show(
       9, // Notification ID
       'Library updated successfully!',
@@ -800,16 +865,18 @@ Future<void> recoverAccount(BuildContext context, String id) async {
     if (userSheet != null) {
       final userRows = await userSheet.values.allRows();
       if (userRows.isNotEmpty) {
-        realm.write(() {
+        // realm.write(() {
           for (final row in userRows) { // Skip the header row
             if (row.isNotEmpty && row[3] == id) { // Ensure the row has enough columns
-              Profile profile = Profile(row[0],row[1],row[5],row[3],row[2],row[4]);
+              User user = User(firstName: row[0], lastName: row[1], email: row[2], id: row[3], phoneNumber: row[4], password: row[5]);
+              userBox.put(id, user);
+              // Profile profile = Profile(row[0],row[1],row[5],row[3],row[2],row[4]);
               fName = row[0];
               lName = row[1];
-              realm.add<Profile>(profile);
+              // realm.add<Profile>(profile);
             }
           }
-        });
+        // });
       }
     }
 
@@ -817,14 +884,12 @@ Future<void> recoverAccount(BuildContext context, String id) async {
     if (borrowedSheet != null) {
       final borrowedRows = await borrowedSheet.values.allRows();
       if (borrowedRows.isNotEmpty) {
-        realm.write(() {
           for (final row in borrowedRows) { // Skip the header row
             if (row.isNotEmpty && row[5] == id) { // Ensure the row has enough columns
-              Book book = Book(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[8]);
-              realm.add<Book>(book);
+              Borrowed borrowed = Borrowed(isbn: row[0], subject: row[1], title: row[2], borrowedBy: row[3], email: row[4], id: row[5], phoneNumber: row[6], pickDate: row[7], returnDate: row[8]);
+              borrowedBox.put(id, borrowed);
             }
           }
-        });
       }
     }
 
@@ -832,14 +897,12 @@ Future<void> recoverAccount(BuildContext context, String id) async {
     if (bookSheet != null) {
       final bookRows = await bookSheet.values.allRows();
       if (bookRows.isNotEmpty) {
-        realm.write(() {
-          for (var row in bookRows.skip(1)) { // Skip the header row
-            if (row.length >= 5) { // Ensure the row has enough columns
-              Library book = Library(row[0],row[1],row[2],row[3],row[4]);
-              realm.add<Library>(book);
-            }
+        for (var row in bookRows.skip(1)) { // Skip the header row
+          if (row.length >= 5) {
+            Book book = Book(subject: row[0], isbn: row[1], title: row[2], publisher: row[3], published: row[4], totalQty: row[5]);
+            booksBox.put(book.isbn, book); // Use ISBN or a unique field as the key
           }
-        });
+        }
       }
     }
 
@@ -918,7 +981,7 @@ Future<void> updatePassword(String password, String natId, BuildContext context)
 
         if (!success) {
           googleSheetNotUpdated(Get.context!).show();
-          throw Exception('Failed to update Google Sheet row');
+          // throw Exception('Failed to update Google Sheet row');
         }
 
         rowUpdated = true;
@@ -927,44 +990,41 @@ Future<void> updatePassword(String password, String natId, BuildContext context)
     }
 
     if (!rowUpdated) {
+      Navigator.of(Get.context!).pop();
       idNoMatch(Get.context!, natId).show();
-      throw Exception('No matching row found for natId: $natId');
+      // throw Exception('No matching row found for natId: $natId');
     }
+    else
+      {
+        Navigator.of(Get.context!).pop(); // Close the loader
 
-    // Update Realm Profile table
-    realm.write(() {
-      final existingProfile = realm.all<Profile>().firstWhere(
-            (profile) => profile.nationalId == natId,
-        orElse: () => throw Exception('No matching Profile found in Realm'),
-      );
-      existingProfile.password = password;
-    });
+        // Navigate to SuccessScreen and close all previous routes
+        Navigator.pushAndRemoveUntil(
+          Get.context!,
+          MaterialPageRoute(builder: (context) => const PasswordRestScreen()),
+              (route) => false,
+        );
 
-    Navigator.of(Get.context!).pop(); // Close the loader
 
-    // Navigate to SuccessScreen and close all previous routes
-    Navigator.pushAndRemoveUntil(
-      Get.context!,
-      MaterialPageRoute(builder: (context) => const PasswordRestScreen()),
-          (route) => false,
-    );
+        await flutterLocalNotificationsPlugin.show(
+          10, // Notification ID
+          'Password Reset successfully!',
+          'Dear User, Your Password has been reset Successfully!',
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'library_channel',
+              'Library Notifications',
+              channelDescription: 'Notifications related to book encouragement',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+          ),
+        );
+      }
 
-    await flutterLocalNotificationsPlugin.show(
-      10, // Notification ID
-      'Password Reset successfully!',
-      'Dear ${person.first.lastName}, Your Password has been reset Successfully!',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'library_channel',
-          'Library Notifications',
-          channelDescription: 'Notifications related to book encouragement',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
-    );
 
   } catch (e) {
+    print("error e  == $e");
     Navigator.of(Get.context!).pop(); // Close the loader
     notOnlineMessage(Get.context!).show();
   }

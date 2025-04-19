@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:idebate/features/authentication/screens/login/login.dart';
 import 'package:idebate/utils/constants/sizes.dart';
 import 'package:idebate/utils/helpers/helper_functions.dart';
@@ -17,7 +17,7 @@ class SuccessScreen extends StatelessWidget {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(onPressed: () => Get.offAll(() => const LoginScreen()), icon: const Icon(CupertinoIcons.clear))
+          IconButton(onPressed: () => Get.offAll(() => const LoginScreen()), icon: const Icon(Iconsax.pen_close))
         ],
       ),
       body: SingleChildScrollView(

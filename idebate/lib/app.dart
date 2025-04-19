@@ -4,16 +4,15 @@ import 'package:idebate/features/authentication/screens/login/login.dart';
 import 'package:idebate/features/authentication/screens/onboarding/onboarding.dart';
 import 'package:idebate/navigation_menu.dart';
 import 'package:idebate/utils/theme/theme.dart';
-import 'package:realm/realm.dart';
-
-import 'features/activities/models/realm_local_storage.dart';
+// import 'package:realm/realm.dart';
+// import 'features/activities/models/realm_local_storage.dart';
 import 'main.dart';
 
 
-var config = Configuration.local([Profile.schema,Checker.schema]);
-var realm = Realm(config);
-RealmResults<Profile> person = realm.all<Profile>();
-RealmResults<Checker> checker = realm.all<Checker>();
+// var config = Configuration.local([Profile.schema,Checker.schema]);
+// var realm = Realm(config);
+// RealmResults<Profile> person = realm.all<Profile>();
+// RealmResults<Checker> checker = realm.all<Checker>();
 
 
 class App extends StatefulWidget {
@@ -45,14 +44,16 @@ class _AppState extends State<App> {
 
 
 Widget redirect(){
-if( person.isNotEmpty)
-{
-  if(checker.isEmpty)
-    {
-      return const LoginScreen();
-    }
-  return const NavigationMenu();
-}
+// if( person.isNotEmpty)
+// {
+//   if(checker.isEmpty)
+//     {
+//       return const LoginScreen();
+//     }
+//   return const NavigationMenu();
+// }
+//
+// return const OnboardingScreen();
 
-return const OnboardingScreen();
+  return const LoginScreen();
 }

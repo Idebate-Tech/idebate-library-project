@@ -1,23 +1,37 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:idebate/common/styles/spacing_styles.dart';
 import 'package:idebate/common/widgets/custom_shapes/containers/primary_header_container.dart';
 import 'package:idebate/features/activities/screens/widgets/activities_appbar.dart';
 import 'package:idebate/features/activities/screens/widgets/library_menu.dart';
 import 'package:idebate/utils/helpers/helper_functions.dart';
-import 'package:realm/realm.dart';
+// import 'package:realm/realm.dart';
 
 import '../../../common/widgets/custom_shapes/containers/header_text_container.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
 import '../controllers/gsheet_controller.dart';
-import '../models/realm_local_storage.dart';
+import '../models/hive_cache_model_file.dart';
+// import '../models/realm_local_storage.dart';
 
-var config = Configuration.local([Profile.schema, Library.schema]);
-var realm = Realm(config);
-RealmResults<Profile> person = realm.all<Profile>();
-RealmResults<Library> books = realm.all<Library>();
+// var config = Configuration.local([Profile.schema, Library.schema]);
+// var realm = Realm(config);
+// RealmResults<Profile> person = realm.all<Profile>();
+// RealmResults<Library> books = realm.all<Library>();
+
+final booksBox = Hive.box<Book>('booksBox');
+final userBox = Hive.box<User>('userBox');
+final borrowedBox = Hive.box<Borrowed>('borrowedBox');
+final pendingReturnBox = Hive.box<PendingReturn>('pendingReturnBox');
+
+final person = userBox.values;
+final books = booksBox.values;
+// final String fullName = '${person.first.firstName} ${person.first.lastName}';
+// final String email = person.first.email ;
+// final String phoneNumber = person.first.phoneNumber;
+// final String id = person.first.id;
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -29,12 +43,9 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   String _searchSubject = 'All';
 
-  Iterable<Library> get _filteredData {
+  Iterable<Book> get _filteredData {
     if (_searchSubject != "All") {
-      return books
-          .where((data) =>
-          data.subject.toLowerCase().contains(_searchSubject.toLowerCase()))
-          .toList();
+      return books.where((data) => data.subject.toLowerCase().contains(_searchSubject.toLowerCase())).toList();
     }
     return books;
   }
