@@ -15,10 +15,18 @@ import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/text_strings.dart';
 import '../../authentication/screens/password_configuration/reset_password.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/hive_cache_model_file.dart';
+import 'package:http/http.dart' as http;
+
+const String apiKey = "ertuy22413rritivgcjffjzzxbcfgh"; // Replace with your secret key
+const String baseUrl = 'http://localhost:8080/api'; // Replace with your Render URL
+
+Map<String, String> get headers => {
+  'Content-Type': 'application/json',
+  'x-api-key': apiKey,
+};
 
 final booksBox = Hive.box<Book>('booksBox');
 final userBox = Hive.box<User>('userBox');
@@ -36,7 +44,7 @@ FlutterLocalNotificationsPlugin();
 Future<String?> findBookByISBN(String isbn, BuildContext context) async {
   // Show the circular loader
   showDialog(
-    context: context,
+    context: Get.context!,
     barrierDismissible: false,
     builder: (BuildContext context) {
       return const Center(
@@ -44,43 +52,34 @@ Future<String?> findBookByISBN(String isbn, BuildContext context) async {
       );
     },
   );
+  String? title;
+  String? subject;
   try{
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final booksSheet = spreadsheet.worksheetByTitle('books');
-    String? title;
-    String? subject;
-
-    if (booksSheet == null) {
-      Navigator.of(Get.context!).pop();
-      notOnlineMessage(Get.context!).show();
-      throw Exception('Books sheet not found');
-    }
-
-    /// Search for ISBN in the first column (column 1)
-    final allRows = await booksSheet.values.allRows();
-    for (final row in allRows) {
-      if (row.isNotEmpty && row[1] == isbn) {
-        title = row[2];
-        subject = row[0];
+    final response = await http.get(
+      Uri.parse('$baseUrl/books/lookup?isbn=$isbn'),
+      headers: headers,
+    );
+    var jsonResponse = jsonDecode(response.body);
+    String status = jsonResponse['status'];
+    subject = jsonResponse['subject'];
+    title = jsonResponse['title'];
+    if(status == "valid")
+      {
         Navigator.of(Get.context!).pop();
         return '$title+$subject';
       }
-    }
-
-    /// Book not found error message
-    Navigator.of(Get.context!).pop();
-    popUpBookNotFoundScreen(Get.context!).show();
-    return 'not found'; // ISBN not found
+    else
+      {
+        Navigator.of(Get.context!).pop();
+        return "not found";
+      }
   }
+
   catch (e)
   {
     Navigator.of(Get.context!).pop();
     notOnlineMessage(Get.context!).show();
   }
-
   return null;
 }
 
@@ -88,7 +87,7 @@ Future<String?> findBookByISBN(String isbn, BuildContext context) async {
 Future<String?> findBookReturnLookUp(String isbn, BuildContext context) async {
   // Show the circular loader
   showDialog(
-    context: context,
+    context: Get.context!,
     barrierDismissible: false,
     builder: (BuildContext context) {
       return const Center(
@@ -96,49 +95,38 @@ Future<String?> findBookReturnLookUp(String isbn, BuildContext context) async {
       );
     },
   );
+  String? title;
+  String? subject;
+  String? name;
+  String? email;
+  String? phoneNumber;
   try{
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final booksSheet = spreadsheet.worksheetByTitle('pending returns');
-    String? title;
-    String? subject;
-    String? name;
-    String? email;
-    String? phoneNumber;
-
-    if (booksSheet == null) {
-      Navigator.of(Get.context!).pop();
-      notOnlineMessage(Get.context!).show();
-      throw Exception('Books sheet not found');
+    final response = await http.get(
+      Uri.parse('$baseUrl/book/lookup?isbn=$isbn'),
+      headers: headers,
+    );
+    var jsonResponse = jsonDecode(response.body);
+    String status = jsonResponse['status'];
+    subject = jsonResponse['subject'];
+    title = jsonResponse['title'];
+    name = jsonResponse['returnedBy'];
+    email = jsonResponse['email'];
+    phoneNumber = jsonResponse['phoneNum'];
+    if(status == "valid")
+    {
+      return '$subject+$title+$name+$email+$phoneNumber';
     }
-
-    /// Search for ISBN in the first column (column 1)
-    final allRows = await booksSheet.values.allRows();
-    for (final row in allRows) {
-      if (row.isNotEmpty && row[0] == isbn) {
-        subject = row[1];
-        title = row[2];
-        name = row[3];
-        email = row[4];
-        phoneNumber = row[6];
-        Navigator.of(Get.context!).pop();
-        return '$subject+$title+$name+$email+$phoneNumber';
-      }
+    else
+    {
+      return "not found";
     }
-
-    /// Book not found error message
-    Navigator.of(Get.context!).pop();
-    popUpBookNotFoundScreen(Get.context!).show();
-    return 'not found'; // ISBN not found
   }
+
   catch (e)
   {
     Navigator.of(Get.context!).pop();
     notOnlineMessage(Get.context!).show();
   }
-
   return null;
 }
 
@@ -146,7 +134,7 @@ Future<String?> findBookReturnLookUp(String isbn, BuildContext context) async {
 Future<void> bookLookUpByISBN(String isbn, BuildContext context) async {
   // Show the circular loader
   showDialog(
-    context: context,
+    context: Get.context!,
     barrierDismissible: false,
     builder: (BuildContext context) {
       return const Center(
@@ -154,142 +142,42 @@ Future<void> bookLookUpByISBN(String isbn, BuildContext context) async {
       );
     },
   );
+  String? title;
+  String? subject;
+  String? publisher;
+  String? published;
+  String? copies;
+
   try{
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final booksSheet = spreadsheet.worksheetByTitle('books');
-    String? title;
-    String? subject;
-    String? publisher;
-    String? published;
-    String? copies;
-    if (booksSheet == null) {
+    final response = await http.get(
+      Uri.parse('$baseUrl/find/book/details?isbn=$isbn'),
+      headers: headers,
+    );
+    var jsonResponse = jsonDecode(response.body);
+    String status = jsonResponse['status'];
+    subject = jsonResponse['subject'];
+    title = jsonResponse['title'];
+    publisher = jsonResponse['publisher'];
+    published = jsonResponse['published'];
+    copies = jsonResponse['qty'];
+    if(status == "valid")
+    {
       Navigator.of(Get.context!).pop();
-      notOnlineMessage(Get.context!).show();
-      throw Exception('Books sheet not found');
+      bookDetailsPop(Get.context!,title,subject,publisher,published,copies,isbn).show();
     }
-
-    /// Search for ISBN in the first column (column 1)
-    final allRows = await booksSheet.values.allRows();
-    for (final row in allRows) {
-      if (row.isNotEmpty && row[1] == isbn) {
-        title = row[2];
-        subject = row[0];
-        publisher = row[3];
-        published = row[4];
-        copies = row[5];
-
-        Navigator.of(Get.context!).pop();
-        bookDetailsPop(Get.context!,title,subject,publisher,published,copies,isbn).show();
-      }
-    }
-
-    /// Book not found error message
-    Navigator.of(Get.context!).pop();
-    bookDetailsPop(Get.context!,title,subject,publisher,published,copies,isbn).show();// ISBN not found
-  }
-  catch (e)
-  {
-    Navigator.of(Get.context!).pop();
-    notOnlineMessage(Get.context!).show();
-  }
-
-  return;
-}
-
-/// add borrowed to sheet
-Future<void> addBorrowedRow(String isbn, String subject, String bookTitle, String borrowedBy, String email, String id, String phoneNumber ,String pickDate, BuildContext context,String returnDate) async {
-  // Show the circular loader
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    },
-  );
-  try{
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
-    final booksSheet = spreadsheet.worksheetByTitle('books');
-
-    if (booksSheet == null) {
-      Navigator.of(Get.context!).pop();
-      notOnlineMessage(Get.context!).show();
-      throw Exception('Books sheet not found');
-    }
-
-    if (borrowedSheet == null) {
-      /// Not online error
-      Navigator.of(Get.context!).pop();
-      notOnlineMessage(Get.context!).show();
-      throw Exception('Borrowed sheet not found');
-    }
-
-    if(book.isNotEmpty)
-      {
-        Navigator.of(Get.context!).pop();
-        ruleOfOneMessage(Get.context!).show();
-      }
     else
-      {
-        if(bookTitle == "not found")
-        {
-          Navigator.of(Get.context!).pop();
-          popUpBookNotFoundScreen(Get.context!).show();
-        }
-        else{
-          ///Add to cache
-          Borrowed borrowed = Borrowed(isbn: isbn, subject: subject, title: bookTitle, borrowedBy: borrowedBy, email: email, id: id, phoneNumber: phoneNumber, pickDate: pickDate, returnDate: returnDate);
-          borrowedBox.put(id, borrowed);
-
-          int qty;
-          int newQty;
-          final allRows = await booksSheet.values.allRows();
-          for (int i = 0; i < allRows.length; i++) {
-            final row = allRows[i]; // Get the row
-            if (row.isNotEmpty && row[1] == isbn) { // Check column 5 for match
-              qty = int.parse(row[5]);
-              newQty = qty-1;
-              await booksSheet.values.insertValue(newQty.toString(), column: 6, row: i+1); // Google Sheets uses 1-based index
-            }
-          }
-
-          // Add the new row
-          List<String> rowData = [isbn,subject, bookTitle, borrowedBy, email, id, phoneNumber,pickDate,returnDate];
-          await borrowedSheet.values.appendRow(rowData);
-
-          // Show success screen
-          Navigator.of(Get.context!).pop();
-          await flutterLocalNotificationsPlugin.show(
-            6, // Notification ID
-            "Your all set 😃",
-            'Enjoy reading ${borrowed.title}!',
-            const NotificationDetails(
-              android: AndroidNotificationDetails(
-                'library_channel',
-                'Library Notifications',
-                channelDescription: 'Notifications related to book encouragement',
-                importance: Importance.high,
-                priority: Priority.high,
-              ),
-            ),
-          );
-          popUpSuccessScreen(Get.context!).show();
-        }
-      }
+    {
+      Navigator.of(Get.context!).pop();
+      bookDetailsPop(Get.context!,"not Found","not Found","not Found","not Found","not Found",isbn).show();
+    }
   }
+
   catch (e)
   {
     Navigator.of(Get.context!).pop();
     notOnlineMessage(Get.context!).show();
   }
+  return;
 }
 
 /// add New book
@@ -305,43 +193,102 @@ Future<void> addNewBook(String bookSubject,String isbn, String bookTitle,String 
     },
   );
   try{
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic> ;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final bookSheet = spreadsheet.worksheetByTitle('books');
+    final res = await http.post(
+      Uri.parse('$baseUrl/books/add'),
+      headers: headers,
+      body: json.encode({
+        'isbn': isbn,
+        'subject': bookSubject,
+        'title': bookTitle,
+        'publisher': bookPublisher,
+        'published': bookPublished,
+        'qty': bookQty
+      }),
+    );
+    var jsonResponse = jsonDecode(res.body);
+    String? status = jsonResponse['status'];
+    String? upload = jsonResponse['upload'];
 
-    if (bookSheet == null) {
-      /// Not online error
+    if(upload == "exists")
+    {
       Navigator.of(Get.context!).pop();
-      notOnlineMessage(Get.context!).show();
-      throw Exception('Books sheet not found');
+      popUpBookAlreadyExistScreen(Get.context!).show();
     }
+    else{
+      // Show success screen
+      Navigator.of(Get.context!).pop();
+      await flutterLocalNotificationsPlugin.show(
+        6, // Notification ID
+        "Your all set 😃",
+        ' $bookTitle has been added successfully to the library',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'library_channel',
+            'Library Notifications',
+            channelDescription: 'Notifications related to book encouragement',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+        ),
+      );
+      newBookSuccessScreen(Get.context!).show();
+    }
+  }
+  catch (e)
+  {
+    Navigator.of(Get.context!).pop();
+    notOnlineMessage(Get.context!).show();
+  }
+}
 
-    String title = "";
-    /// Search for ISBN in the first column (column 1)
-    final allRows = await bookSheet.values.allRows();
-    for (final row in allRows) {
-      if (row.isNotEmpty && row[1] == isbn) {
-        title = row[2];
-      }
+/// add borrowed to sheet
+Future<void> addBorrowedRow(String isbn, String subject, String bookTitle, String borrowedBy, String email, String id, String phoneNumber ,String pickDate, BuildContext context,String returnDate) async {
+  // Show the circular loader
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    },
+  );
+  try{
+    final res = await http.post(
+      Uri.parse('$baseUrl/books/borrow'),
+      headers: headers,
+      body: json.encode({
+        'isbn': isbn,
+        'subject': subject,
+        'title': bookTitle,
+        'borrowedBy': borrowedBy,
+        'email': email,
+        'id': id,
+        'phoneNumber': phoneNumber,
+        'pickDate': pickDate,
+        'returnDate': returnDate
+      }),
+    );
+    var jsonResponse = jsonDecode(res.body);
+    String? status = jsonResponse['status'];
+
+    if(status == 'already-borrowed')
+    {
+      Navigator.of(Get.context!).pop();
+      ruleOfOneMessage(Get.context!).show();
     }
-      if(title != "")
-      {
-        Navigator.of(Get.context!).pop();
-        popUpBookAlreadyExistScreen(Get.context!).show();
-      }
-      else{
-        // Add the new row
-        List<String> rowData = [bookSubject,isbn,bookTitle, bookPublisher, bookPublished, bookQty];
-        await bookSheet.values.appendRow(rowData);
+    else
+    {
+        ///Add to cache
+        Borrowed borrowed = Borrowed(isbn: isbn, subject: subject, title: bookTitle, borrowedBy: borrowedBy, email: email, id: id, phoneNumber: phoneNumber, pickDate: pickDate, returnDate: returnDate);
+        borrowedBox.put(id, borrowed);
 
         // Show success screen
         Navigator.of(Get.context!).pop();
         await flutterLocalNotificationsPlugin.show(
           6, // Notification ID
           "Your all set 😃",
-          ' $bookTitle has been added successfully to the library',
+          'Enjoy reading ${borrowed.title}!',
           const NotificationDetails(
             android: AndroidNotificationDetails(
               'library_channel',
@@ -352,8 +299,8 @@ Future<void> addNewBook(String bookSubject,String isbn, String bookTitle,String 
             ),
           ),
         );
-        newBookSuccessScreen(Get.context!).show();
-      }
+        popUpSuccessScreen(Get.context!).show();
+    }
   }
   catch (e)
   {
@@ -376,53 +323,49 @@ Future<void> addReturnPendingRow(String isbn, String subject, String bookTitle, 
   );
 
   try {
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final returnSheet = spreadsheet.worksheetByTitle('pending returns');
-    final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
-
-    if (returnSheet == null) {
-      throw Exception('Borrowed sheet not found');
-    }
-    borrowedBox.delete(id);
-
-    // Add the new row
-    List<String> rowData = [isbn, subject, bookTitle, returnedBy, email, id, phoneNumber, pickDate];
-    await returnSheet.values.appendRow(rowData);
-    /// remove book from borrowed sheet
-
-    if (borrowedSheet != null) {
-      final borrowRows = await borrowedSheet.values.allRows();
-      if (borrowRows.isNotEmpty) {
-        for (int i = 0; i < borrowRows.length; i++) {
-          final row = borrowRows[i]; // Get the row
-          if (row.isNotEmpty && row[5] == id) { // Check column 5 for match
-            await borrowedSheet.deleteRow(i + 1); // Google Sheets uses 1-based index
-          }
-        }
-      }
-    }
-
-    /// Close the loader and show success dialog
- Navigator.of(Get.context!).pop();
-    await flutterLocalNotificationsPlugin.show(
-      7, // Notification ID
-      'Return Filed!',
-      'Your return request has been filed successfully',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'library_channel',
-          'Library Notifications',
-          channelDescription: 'Notifications related to book encouragement',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
+    final res = await http.post(
+      Uri.parse('$baseUrl/return/pending'),
+      headers: headers,
+      body: json.encode({
+        'isbn': isbn,
+        'subject': subject,
+        'title': bookTitle,
+        'returnedBy': returnedBy,
+        'email': email,
+        'id': id,
+        'phoneNumber': phoneNumber,
+        'pickDate': pickDate,
+      }),
     );
+    var jsonResponse = jsonDecode(res.body);
+    String status = jsonResponse['status'];
+    if(status == "pending-returned")
+    {
+        borrowedBox.delete(id);
+        /// Close the loader and show success dialog
+        Navigator.of(Get.context!).pop();
+        await flutterLocalNotificationsPlugin.show(
+          7, // Notification ID
+          'Return Filed!',
+          'Your return request has been filed successfully',
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'library_channel',
+              'Library Notifications',
+              channelDescription: 'Notifications related to book encouragement',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+          ),
+        );
 
-    returnSuccessScreen(Get.context!).show();
+        returnSuccessScreen(Get.context!).show();
+      }
+    else
+      {
+        Navigator.of(Get.context!).pop();
+        popUpBookNotFoundScreen(Get.context!).show();
+      }
 
   } catch (e) {
     // Close the loader and show error message
@@ -431,7 +374,7 @@ Future<void> addReturnPendingRow(String isbn, String subject, String bookTitle, 
   }
 }
 
-/// add to return pending sheet
+/// add to return confirm sheet
 Future<void> addReturnConfirmRow(String isbn, String subject, String bookTitle, String returnedBy, String email, String id, String phoneNumber, String pickDate, BuildContext context) async {
 
   // Show the circular loader
@@ -446,74 +389,46 @@ Future<void> addReturnConfirmRow(String isbn, String subject, String bookTitle, 
   );
 
   try {
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final returnSheet = spreadsheet.worksheetByTitle('confirmed returns');
-    final returnPendingSheet = spreadsheet.worksheetByTitle('pending returns');
-    final booksSheet = spreadsheet.worksheetByTitle('books');
-
-
-    if (booksSheet == null) {
-      Navigator.of(Get.context!).pop();
-      notOnlineMessage(Get.context!).show();
-      throw Exception('Books sheet not found');
-    }
-
-    if (returnSheet == null) {
-      throw Exception('Borrowed sheet not found');
-    }
-
     String receiverName = "${person.first.firstName} ${person.first.lastName}";
     String receiverEmail = person.first.email;
-    // Add the new row
-    List<String> rowData = [isbn, subject, bookTitle, returnedBy, email, id, phoneNumber, pickDate,receiverName,receiverEmail];
-    await returnSheet.values.appendRow(rowData);
-    /// remove book from borrowed sheet
-    if (returnPendingSheet != null) {
-      final borrowRows = await returnPendingSheet.values.allRows();
-      if (borrowRows.isNotEmpty) {
-        for (int i = 0; i < borrowRows.length; i++) {
-          final row = borrowRows[i]; // Get the row
-          if (row.isNotEmpty && row[5] == id) { // Check column 5 for match
-            await returnPendingSheet.deleteRow(i + 1); // Google Sheets uses 1-based index
-          }
-        }
-      }
-    }
-
-    int qty;
-    int newQty;
-    final allRows = await booksSheet.values.allRows();
-    for (int i = 0; i < allRows.length; i++) {
-      final row = allRows[i]; // Get the row
-      if (row.isNotEmpty && row[1] == isbn) { // Check column 5 for match
-        qty = int.parse(row[5]);
-        newQty = qty+1;
-        await booksSheet.values.insertValue(newQty.toString(), column: 6, row: i+1); // Google Sheets uses 1-based index
-      }
-    }
-
-
-    /// Close the loader and show success dialog
-   Navigator.of(Get.context!).pop();
-    await flutterLocalNotificationsPlugin.show(
-      7, // Notification ID
-      'Return confirmed!',
-      'The return request has been confirmed successfully',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'library_channel',
-          'Library Notifications',
-          channelDescription: 'Notifications related to book encouragement',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
+    final res = await http.post(
+      Uri.parse('$baseUrl/return/confirm'),
+      headers: headers,
+      body: json.encode({
+        'isbn': isbn,
+        'subject': subject,
+        'title': bookTitle,
+        'returnedBy': returnedBy,
+        'email': email,
+        'id': id,
+        'phoneNumber': phoneNumber,
+        'pickDate': pickDate,
+        'receiverName': receiverName,
+        'receiverEmail':receiverEmail
+      }),
     );
-    returnConfirmSuccessScreen(Get.context!).show();
-
+    var jsonResponse = jsonDecode(res.body);
+    String status = jsonResponse['status'];
+    if(status == "confirmed-return")
+      {
+        /// Close the loader and show success dialog
+        Navigator.of(Get.context!).pop();
+        await flutterLocalNotificationsPlugin.show(
+          7, // Notification ID
+          'Return confirmed!',
+          'The return request has been confirmed successfully',
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'library_channel',
+              'Library Notifications',
+              channelDescription: 'Notifications related to book encouragement',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+          ),
+        );
+        returnConfirmSuccessScreen(Get.context!).show();
+      }
   } catch (e) {
     // Close the loader and show error message
     Navigator.of(Get.context!).pop();
@@ -521,9 +436,9 @@ Future<void> addReturnConfirmRow(String isbn, String subject, String bookTitle, 
   }
 }
 
-/// Login
-Future<void> login(String email, String password,String unEncrypted, BuildContext context) async {
-  // Show the circular loader
+/// login
+Future<void> login(String email, String password, String unEncrypted,BuildContext context) async {
+    // Show the circular loader
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -534,112 +449,86 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
     },
   );
   try{
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final librarianSheet = spreadsheet.worksheetByTitle('Librarians');
-    final userSheet = spreadsheet.worksheetByTitle('user');
-    final bookSheet = spreadsheet.worksheetByTitle('books');
-    final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
-
-    String pass ="";
-    String fullName = "";
-    String fname= "";
-    String lname = "";
-    String natid ="";
-    String phNum ="";
-    String passord ="";
-    String emailAddress = "";
-
-    if (userSheet != null) {
-      final userRows = await userSheet.values.allRows();
-      if (userRows.isNotEmpty) {
-        for (final row in userRows) { // Skip the header row
-          if (row.isNotEmpty && row[2] == email) {// Ensure the row has enough columns
-            fname = row[0];
-            lname = row[1];
-            natid = row[3];
-            phNum = row[4];
-            pass = row[5];
-
-          }
-        }
-      }
-    }
-    print('password == $password and pass == $pass');
-    String capPass ="";
-    if(password == pass)
+    final res = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: headers,
+      body: json.encode({
+        'email': email,
+        'password': password,
+        'unEncrypted': unEncrypted,
+      }),
+    );
+    var jsonResponse = jsonDecode(res.body);
+    String status = jsonResponse['status'];
+    if(status == "valid")
     {
-      // bool userFound = false;
-      if (userSheet == null) {
-        /// Not online error
-        Navigator.of(Get.context!).pop(); // Close the loader
-        errorWhileLoadingLibrary(Get.context!).show();
-        throw Exception('Borrowed sheet not found');
-      }
+      String fname = jsonResponse['firstName'];
+      String lname = jsonResponse['lastName'];
+      String natid = jsonResponse['id'];
+      String phNum = jsonResponse['phone'];
+      String role = jsonResponse['role'];
+      if(role == "user")
+        {
+          /// add user to hive cache
+          User user = User(firstName: fname, lastName: lname, email: email, id: natid, phoneNumber: phNum, password: password);
+          userBox.put(natid, user);
 
-      User user = User(firstName: fname, lastName: lname, email: email, id: natid, phoneNumber: phNum, password: password);
-      userBox.put(natid, user);
+          /// add books to library
+          final response = await http.get(
+            Uri.parse('$baseUrl/library/sync'),
+            headers: headers,
+          );
+          print("the responsebody ==== ${response.body}");
+          final List<dynamic> data = json.decode(response.body);
+          print("the data ==== $data");
 
-      print("fname = ${person.first.firstName} lname = ${person.first.lastName} email = ${person.first.email} id = ${person.first.id} phoneNumber = ${person.first.phoneNumber} password = ${person.first.password}");
 
-      /// Add borrowed to realm db
-      if (borrowedSheet != null) {
-        final borrowedRows = await borrowedSheet.values.allRows();
-        if (borrowedRows.isNotEmpty) {
-          for (final row in borrowedRows) { // Skip the header row
-            if (row.isNotEmpty && row[5] == natid) { // Ensure the row has enough columns
-              print('we are here');
-              Borrowed borrowed = Borrowed(isbn: row[0], subject: row[1], title: row[2], borrowedBy: row[3], email: row[4], id: row[5], phoneNumber: row[6], pickDate: row[7], returnDate: row[8]);
-              borrowedBox.put(natid, borrowed);
+          for(var item in data)
+            {
+              final book = Book.fromJson(item);
+              await booksBox.put(book.isbn, book);
             }
-          }
-        }
-      }
+          print("library added");
 
-      /// For loop that adds all the books from the books sheet to realm table called Library
-      if (bookSheet != null) {
-        final bookRows = await bookSheet.values.allRows();
-        if (bookRows.isNotEmpty) {
-          for (var row in bookRows.skip(1)) { // Skip the header row
-            if (row.length >= 5) {
-              Book book = Book(subject: row[0], isbn: row[1], title: row[2], publisher: row[3], published: row[4], totalQty: row[5]);
-              booksBox.put(book.isbn, book); // Use ISBN or a unique field as the key
+          /// add borrowed if available
+          final borrowedRes = await http.get(
+            Uri.parse('$baseUrl/login/find/borrowed?email=$email'),
+            headers: headers,
+          );
+          var jsonBorrowResponse = jsonDecode(borrowedRes.body);
+          String status = jsonBorrowResponse['status'];
+          if(status == "valid")
+            {
+              print("added borrowed books .... or not");
+              String isbn = jsonBorrowResponse['isbn'];
+              String title = jsonBorrowResponse['title'];
+              String subject = jsonBorrowResponse['subject'];
+              String email = jsonBorrowResponse['email'];
+              String id = jsonBorrowResponse['id'];
+              String phoneNumber = jsonBorrowResponse['phoneNumber'];
+              String borrowedBy = jsonBorrowResponse['borrowedBy'];
+              String pickDate = jsonBorrowResponse['pickDate'];
+              String returnDate = jsonBorrowResponse['returnDate'];
+
+              ///Add to cache
+              Borrowed borrowed = Borrowed(isbn: isbn, subject: subject, title: title, borrowedBy: borrowedBy, email: email, id: id, phoneNumber: phoneNumber, pickDate: pickDate, returnDate: returnDate);
+              borrowedBox.put(id, borrowed);
             }
-          }
-        }
-      }
 
+          print("added borrowed books .... or not");
 
-      Navigator.of(Get.context!).pop(); // Close the loader
+       // Close the loader and navigate to user Main Screen
+          Navigator.of(Get.context!).pop();
       Navigator.pushAndRemoveUntil(
         Get.context!,
         MaterialPageRoute(builder: (context) => const NavigationMenu()),
             (route) => false, // Removes all previous routes
       );
-    }
-    else if(email.contains("admin"))
-    {
-      if (librarianSheet != null) {
-        final userRows = await librarianSheet.values.allRows();
-        if (userRows.isNotEmpty) {
-            for (final row in userRows) { // Skip the header row
-              if (row.isNotEmpty && row[3] == email) {// Ensure the row has enough columns
-                fname = row[1];
-                lname = row[2];
-                natid = row[3];
-                phNum = row[4];
-                capPass = row[5];
-              }
-            }
         }
-      }
-      if(capPass == unEncrypted)
+      else
         {
           User user = User(firstName: fname, lastName: lname, email: email, id: natid, phoneNumber: phNum, password: password);
           userBox.put(natid, user);
-          print("fname = ${person.first.firstName} lname = ${person.first.lastName} email = ${person.first.email} id = ${person.first.id} phoneNumber = ${person.first.phoneNumber} password = ${person.first.password}");
           Navigator.of(Get.context!).pop(); // Close the loader
           Navigator.pushAndRemoveUntil(
             Get.context!,
@@ -647,25 +536,19 @@ Future<void> login(String email, String password,String unEncrypted, BuildContex
                 (route) => false, // Removes all previous routes
           );
         }
-      else
-        {
-          print('password == $password pass == $pass');
-          Navigator.of(Get.context!).pop(); // Close the loader
-          wrongCredentials(Get.context!).show();
-        }
     }
     else
-      {
-        Navigator.of(Get.context!).pop(); // Close the loader
-        wrongCredentials(Get.context!).show();
-      }
+    {
+      Navigator.of(Get.context!).pop(); // Close the loader
+      wrongCredentials(Get.context!).show();
+    }
   }
   catch (e)
   {
     Navigator.of(Get.context!).pop();
     print("the e == $e");
     ScaffoldMessenger.of(Get.context!).showSnackBar(
-         SnackBar(content: Text("the error $e")));
+        SnackBar(content: Text("the error $e")));
     notOnlineMessage(Get.context!).show();
   }
 }
@@ -684,85 +567,58 @@ Future<void> addNewuser(String fName, String lName, String email, String id, Str
   );
 
   try {
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final userSheet = spreadsheet.worksheetByTitle('user');
-    final bookSheet = spreadsheet.worksheetByTitle('books');
-
-    String name= "";
-    String emailAddress = "";
-    // bool userFound = false;
-    if (userSheet == null) {
-      /// Not online error
-      Navigator.of(Get.context!).pop(); // Close the loader
-      errorWhileLoadingLibrary(Get.context!).show();
-      throw Exception('Borrowed sheet not found');
-    }
-
+    final res = await http.post(
+      Uri.parse('$baseUrl/users/register'),
+      headers: headers,
+      body: json.encode({
+        'firstName':fName,
+        'lastName':lName,
+        'email': email,
+        'id':id,
+        'phoneNumber':phoneNumber,
+        'password': password,
+      }),
+    );
+    var jsonResponse = jsonDecode(res.body);
+    String status = jsonResponse['status'];
     /// verify for existing accounts by ID
-    final allRows = await userSheet.values.allRows();
-    for (final row in allRows) {
-      if (row.isNotEmpty && row[3] == id) {
-        name = "${row[0]} ${row[1]}";
-        emailAddress = row[2];
+      if (status == "exists") {
+        String name = "$fName $lName";
         Navigator.of(Get.context!).pop();
         //Navigate to recoverScreen and close all previous routes
         Navigator.pushAndRemoveUntil(
           Get.context!,
-          MaterialPageRoute(builder: (context) =>  RecoverScreen(name: name,email: emailAddress,id: id)),
+          MaterialPageRoute(builder: (context) =>  RecoverScreen(name: name,email: email,id: id)),
               (route) => false,
         );
         return;
       }
-    }
-
-        /// Add the new row
-        List<String> rowData = [fName, lName, email, id, phoneNumber, password];
-        await userSheet.values.appendRow(rowData);
-
+      else{
         /// Add to cache
-    User user = User(firstName: fName, lastName: lName, email: email, id: id, phoneNumber: phoneNumber, password: password);
-    userBox.put(id, user);
+        User user = User(firstName: fName, lastName: lName, email: email, id: id, phoneNumber: phoneNumber, password: password);
+        userBox.put(id, user);
 
-        /// For loop that adds all the books from the books sheet to realm table called Library
-        if (bookSheet != null) {
-          final bookRows = await bookSheet.values.allRows();
-          if (bookRows.isNotEmpty) {
+        /// add books to library
+        // final response = await http.get(
+        //   Uri.parse('$baseUrl/library/sync'),
+        //   headers: headers,
+        // );
+        // final List<dynamic> data = json.decode(response.body);
+        //
+        // for(var item in data)
+        // {
+        //   final book = Book.fromJson(item);
+        //   await booksBox.put(book.isbn, book);
+        // }
 
-            for (var row in bookRows.skip(1)) { // Skip the header row
-              if (row.length >= 5) {
-                Book book = Book(subject: row[0], isbn: row[1], title: row[2], publisher: row[3], published: row[4], totalQty: row[5]);
-                booksBox.put(book.isbn, book); // Use ISBN or a unique field as the key
-              }
-            }
-          }
-        }
         Navigator.of(Get.context!).pop(); // Close the loader
-
-        await flutterLocalNotificationsPlugin.show(
-          8, // Notification ID
-          'Welcome ${person.first.lastName} 🥳!',
-          'Your user has been created Successfully!',
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'library_channel',
-              'Library Notifications',
-              channelDescription: 'Notifications related to book encouragement',
-              importance: Importance.high,
-              priority: Priority.high,
-            ),
-          ),
-        );
-
-
         // Navigate to SuccessScreen and close all previous routes
         Navigator.pushAndRemoveUntil(
           Get.context!,
           MaterialPageRoute(builder: (context) => const SuccessScreen()),
               (route) => false,
         );
+      }
 
   } catch (e)
   {
@@ -785,34 +641,21 @@ Future<void> updateLibrary(BuildContext context) async {
   );
 
   try {
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final borrowedSheet = spreadsheet.worksheetByTitle('user');
-    final bookSheet = spreadsheet.worksheetByTitle('books');
-
-    if (borrowedSheet == null) {
-      /// Not online error
-      Navigator.of(Get.context!).pop(); // Close the loader
-      errorWhileLoadingLibrary(Get.context!).show();
-      throw Exception('Borrowed sheet not found');
-    }
-
     /// delete old books first
     booksBox.clear();
-    /// For loop that adds all the books from the books sheet to realm table called Library
-    if (bookSheet != null) {
-      final bookRows = await bookSheet.values.allRows();
-      if (bookRows.isNotEmpty) {
-        for (var row in bookRows.skip(1)) { // Skip the header row
-          if (row.length >= 5) {
-            Book book = Book(subject: row[0], isbn: row[1], title: row[2], publisher: row[3], published: row[4], totalQty: row[5]);
-            booksBox.put(book.isbn, book); // Use ISBN or a unique field as the key
-          }
-        }
-      }
+    /// add books to library
+    final response = await http.get(
+      Uri.parse('$baseUrl/library/sync'),
+      headers: headers,
+    );
+    final List<dynamic> data = json.decode(response.body);
+
+    for(var item in data)
+    {
+      final book = Book.fromJson(item);
+      await booksBox.put(book.isbn, book);
     }
+
     Navigator.of(Get.context!).pop(); // Close the loader
     libraryUpdated(Get.context!).show();
     await flutterLocalNotificationsPlugin.show(
@@ -851,60 +694,62 @@ Future<void> recoverAccount(BuildContext context, String id) async {
   );
 
   try {
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-    final userSheet = spreadsheet.worksheetByTitle('user');
-    final bookSheet = spreadsheet.worksheetByTitle('books');
-    final borrowedSheet = spreadsheet.worksheetByTitle('borrowed');
-
+    final response = await http.get(
+      Uri.parse('$baseUrl/books/lookup?isbn=$id'),
+      headers: headers,
+    );
+    var jsonResponse = jsonDecode(response.body);
+    String status = jsonResponse['status'];
+    String firstName = jsonResponse['firstName'];
+    String lastName = jsonResponse['lastName'];
+    String password = jsonResponse['password'];
+    String phone = jsonResponse['phone'];
+    String email = jsonResponse['email'];
+    String userId = jsonResponse['id'];
     String fName ='',lName='';
 
     /// Add user to realm db
-    if (userSheet != null) {
-      final userRows = await userSheet.values.allRows();
-      if (userRows.isNotEmpty) {
-        // realm.write(() {
-          for (final row in userRows) { // Skip the header row
-            if (row.isNotEmpty && row[3] == id) { // Ensure the row has enough columns
-              User user = User(firstName: row[0], lastName: row[1], email: row[2], id: row[3], phoneNumber: row[4], password: row[5]);
-              userBox.put(id, user);
-              // Profile profile = Profile(row[0],row[1],row[5],row[3],row[2],row[4]);
-              fName = row[0];
-              lName = row[1];
-              // realm.add<Profile>(profile);
-            }
-          }
-        // });
-      }
+    User user = User(firstName: firstName, lastName: lastName, email: email, id: userId, phoneNumber: phone, password: password);
+    userBox.put(id, user);
+
+
+    /// add borrowed if available
+    final borrowedRes = await http.get(
+      Uri.parse('$baseUrl/login/find/borrowed'),
+      headers: headers,
+    );
+    var jsonBorrowResponse = jsonDecode(borrowedRes.body);
+    String borrowStatus = jsonBorrowResponse['status'];
+    if(borrowStatus == "valid")
+    {
+      String isbn = jsonBorrowResponse['isbn'];
+      String title = jsonBorrowResponse['title'];
+      String subject = jsonBorrowResponse['subject'];
+      String email = jsonBorrowResponse['email'];
+      String id = jsonBorrowResponse['id'];
+      String phoneNumber = jsonBorrowResponse['phoneNumber'];
+      String borrowedBy = jsonBorrowResponse['borrowedBy'];
+      String pickDate = jsonBorrowResponse['pickDate'];
+      String returnDate = jsonBorrowResponse['returnDate'];
+
+      ///Add to cache
+      Borrowed borrowed = Borrowed(isbn: isbn, subject: subject, title: title, borrowedBy: borrowedBy, email: email, id: id, phoneNumber: phoneNumber, pickDate: pickDate, returnDate: returnDate);
+      borrowedBox.put(id, borrowed);
     }
 
-    /// Add borrowed to realm db
-    if (borrowedSheet != null) {
-      final borrowedRows = await borrowedSheet.values.allRows();
-      if (borrowedRows.isNotEmpty) {
-          for (final row in borrowedRows) { // Skip the header row
-            if (row.isNotEmpty && row[5] == id) { // Ensure the row has enough columns
-              Borrowed borrowed = Borrowed(isbn: row[0], subject: row[1], title: row[2], borrowedBy: row[3], email: row[4], id: row[5], phoneNumber: row[6], pickDate: row[7], returnDate: row[8]);
-              borrowedBox.put(id, borrowed);
-            }
-          }
-      }
+    /// add books to library
+    final res = await http.get(
+      Uri.parse('$baseUrl/library/sync'),
+      headers: headers,
+    );
+    final List<dynamic> data = json.decode(res.body);
+
+    for(var item in data)
+    {
+      final book = Book.fromJson(item);
+      await booksBox.put(book.isbn, book);
     }
 
-    /// For loop that adds all the books from the books sheet to realm table called Library
-    if (bookSheet != null) {
-      final bookRows = await bookSheet.values.allRows();
-      if (bookRows.isNotEmpty) {
-        for (var row in bookRows.skip(1)) { // Skip the header row
-          if (row.length >= 5) {
-            Book book = Book(subject: row[0], isbn: row[1], title: row[2], publisher: row[3], published: row[4], totalQty: row[5]);
-            booksBox.put(book.isbn, book); // Use ISBN or a unique field as the key
-          }
-        }
-      }
-    }
 
     Navigator.of(Get.context!).pop(); // Close the loader
     accountRestore(Get.context!, "$fName $lName").show();
@@ -938,7 +783,7 @@ Future<void> recoverAccount(BuildContext context, String id) async {
   }
 }
 
-/// update new password
+/// update new password (here)
 Future<void> updatePassword(String password, String natId, BuildContext context) async {
   // Show the circular loader
   showDialog(
@@ -952,44 +797,13 @@ Future<void> updatePassword(String password, String natId, BuildContext context)
   );
 
   try {
-    // Load Google Sheets credentials
-    final jsonString = await rootBundle.loadString(TCredentials.myCredentials);
-    final credentials = json.decode(jsonString) as Map<String, dynamic>;
-    final gSheets = GSheets(credentials);
-    final spreadsheet = await gSheets.spreadsheet(_spreadsheetId);
-
-    // Get the 'user' worksheet
-    final borrowedSheet = spreadsheet.worksheetByTitle('user');
-    if (borrowedSheet == null) {
-      Navigator.of(Get.context!).pop(); // Close the loader
-      errorWhileLoadingLibrary(Get.context!).show();
-      throw Exception('User worksheet not found');
-    }
-
-    // Update row in worksheet
-    final allRows = await borrowedSheet.values.allRows();
-    bool rowUpdated = false;
-
-    for (int i = 0; i < allRows.length; i++) {
-      final row = allRows[i];
-      if (row.isNotEmpty && row[3] == natId) { // Check the 4th column
-        final success = await borrowedSheet.values.insertValue(
-          password,
-          column: 6, // 6th column
-          row: i + 1, // Adjust for 1-based indexing
-        );
-
-        if (!success) {
-          googleSheetNotUpdated(Get.context!).show();
-          // throw Exception('Failed to update Google Sheet row');
-        }
-
-        rowUpdated = true;
-        break;
-      }
-    }
-
-    if (!rowUpdated) {
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/update-password?id=$natId'),
+      headers: headers,
+    );
+    var jsonResponse = jsonDecode(response.body);
+    String status = jsonResponse['status'];
+    if (status == "not-found") {
       Navigator.of(Get.context!).pop();
       idNoMatch(Get.context!, natId).show();
       // throw Exception('No matching row found for natId: $natId');

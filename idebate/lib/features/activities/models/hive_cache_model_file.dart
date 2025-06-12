@@ -29,6 +29,17 @@ class Book extends HiveObject {
     required this.published,
     required this.totalQty,
   });
+
+  factory Book.fromJson(Map<String, dynamic> json) {
+    return Book(
+      subject: json['subject'] ?? '',
+      isbn: json['isbn'] ?? '',
+      title: json['title'] ?? '',
+      publisher: json['publisher'] ?? '',
+      published: json['published'] ?? '',
+      totalQty: json['qty'] ?? '', // make sure this matches backend
+    );
+  }
 }
 
 // User Model

@@ -178,6 +178,7 @@ class TLoginFormState extends State<TLoginForm>
     try {
       String encrypted= encryption(password!,TTexts.encryptKey);
       /// login
+      print("in loggin ***** email: $email, encrypted: $encrypted, password: $password");
       login(email!, encrypted,password,context);
     } on PlatformException catch (e) {
       throw Exception('Problem with encryption $e');
