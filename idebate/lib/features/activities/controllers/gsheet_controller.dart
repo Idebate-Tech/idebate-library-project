@@ -1,16 +1,13 @@
 import 'dart:convert';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'package:gsheets/gsheets.dart';
 import 'package:idebate/common/widgets/recover_Account_screen/recover_screen.dart';
 import 'package:idebate/common/widgets/success_screen/success_screen.dart';
 import 'package:idebate/features/authentication/screens/login/login.dart';
 import 'package:idebate/manager_menu.dart';
 import 'package:idebate/navigation_menu.dart';
-import 'package:idebate/utils/constants/credentials_string.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/text_strings.dart';
 import '../../authentication/screens/password_configuration/reset_password.dart';
@@ -21,7 +18,7 @@ import '../models/hive_cache_model_file.dart';
 import 'package:http/http.dart' as http;
 
 const String apiKey = "ertuy22413rritivgcjffjzzxbcfgh"; // Replace with your secret key
-const String baseUrl = 'http://localhost:8080/api'; // Replace with your Render URL
+const String baseUrl = 'https://iread-proxy.onrender.com/api'; // Replace with your Render URL
 
 Map<String, String> get headers => {
   'Content-Type': 'application/json',
