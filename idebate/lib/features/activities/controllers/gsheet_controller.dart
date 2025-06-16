@@ -53,7 +53,7 @@ Future<String?> findBookByISBN(String isbn, BuildContext context) async {
   String? subject;
   try{
     final response = await http.get(
-      Uri.parse('$baseUrl/books/lookup?isbn=$isbn'),
+      Uri.parse('$baseUrl/find/book?isbn=$isbn'),
       headers: headers,
     );
     var jsonResponse = jsonDecode(response.body);
@@ -74,6 +74,7 @@ Future<String?> findBookByISBN(String isbn, BuildContext context) async {
 
   catch (e)
   {
+    SnackBar(content: Text("the error $e"));
     Navigator.of(Get.context!).pop();
     notOnlineMessage(Get.context!).show();
   }
@@ -99,7 +100,7 @@ Future<String?> findBookReturnLookUp(String isbn, BuildContext context) async {
   String? phoneNumber;
   try{
     final response = await http.get(
-      Uri.parse('$baseUrl/book/lookup?isbn=$isbn'),
+      Uri.parse('$baseUrl/book/return/lookup?isbn=$isbn'),
       headers: headers,
     );
     var jsonResponse = jsonDecode(response.body);
@@ -111,16 +112,19 @@ Future<String?> findBookReturnLookUp(String isbn, BuildContext context) async {
     phoneNumber = jsonResponse['phoneNum'];
     if(status == "valid")
     {
+      Navigator.of(Get.context!).pop();
       return '$subject+$title+$name+$email+$phoneNumber';
     }
     else
     {
+      Navigator.of(Get.context!).pop();
       return "not found";
     }
   }
 
   catch (e)
   {
+    SnackBar(content: Text("the error $e"));
     Navigator.of(Get.context!).pop();
     notOnlineMessage(Get.context!).show();
   }
@@ -171,6 +175,7 @@ Future<void> bookLookUpByISBN(String isbn, BuildContext context) async {
 
   catch (e)
   {
+    SnackBar(content: Text("the error $e"));
     Navigator.of(Get.context!).pop();
     notOnlineMessage(Get.context!).show();
   }
@@ -410,20 +415,6 @@ Future<void> addReturnConfirmRow(String isbn, String subject, String bookTitle, 
       {
         /// Close the loader and show success dialog
         Navigator.of(Get.context!).pop();
-        await flutterLocalNotificationsPlugin.show(
-          7, // Notification ID
-          'Return confirmed!',
-          'The return request has been confirmed successfully',
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'library_channel',
-              'Library Notifications',
-              channelDescription: 'Notifications related to book encouragement',
-              importance: Importance.high,
-              priority: Priority.high,
-            ),
-          ),
-        );
         returnConfirmSuccessScreen(Get.context!).show();
       }
   } catch (e) {
@@ -692,7 +683,7 @@ Future<void> recoverAccount(BuildContext context, String id) async {
 
   try {
     final response = await http.get(
-      Uri.parse('$baseUrl/books/lookup?isbn=$id'),
+      Uri.parse('$baseUrl/find/book?isbn=$id'),
       headers: headers,
     );
     var jsonResponse = jsonDecode(response.body);
@@ -794,9 +785,13 @@ Future<void> updatePassword(String password, String natId, BuildContext context)
   );
 
   try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/users/update-password?id=$natId'),
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/update-password'),
       headers: headers,
+      body: json.encode({
+        'id':natId,
+        'password': password,
+      }),
     );
     var jsonResponse = jsonDecode(response.body);
     String status = jsonResponse['status'];
@@ -808,7 +803,6 @@ Future<void> updatePassword(String password, String natId, BuildContext context)
     else
       {
         Navigator.of(Get.context!).pop(); // Close the loader
-
         // Navigate to SuccessScreen and close all previous routes
         Navigator.pushAndRemoveUntil(
           Get.context!,
